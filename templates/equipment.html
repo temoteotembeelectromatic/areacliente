@@ -11,10 +11,10 @@
     <span class="readonly-badge">Apenas leitura</span>
   </header>
 
-  <form class="equipment-filters" method="get" data-loading-form data-loading-text="A carregar...">
+  <form class="equipment-filters" method="get" data-loading-form data-live-search data-loading-text="A carregar...">
     <label class="search-field">
       <span class="sr-only">Pesquisar equipamentos</span>
-      <input type="search" name="q" value="{{ filters.q }}" placeholder="Pesquisar por n.º de cliente ou n.º de contrato...">
+      <input type="search" name="q" value="{{ filters.q }}" placeholder="Pesquisar por n.º de cliente ou n.º de contrato..." autocomplete="off">
     </label>
 
     <div class="filter-selects">
@@ -51,6 +51,7 @@
     </div>
   </form>
 
+  <div id="equipment-results" aria-live="polite">
   <div class="equipment-results-meta">
     <strong>{{ equipment|length }} equipamento{% if equipment|length != 1 %}s{% endif %}</strong>
     <span>{{ source_label }}</span>
@@ -98,6 +99,14 @@
       </table>
     </div>
   {% else %}
+    <section class="equipment-preview-strip" aria-label="Pré-visualização dos equipamentos">
+      {% for item in equipment[:4] %}
+        <article class="equipment-preview">
+          <div class="equipment-preview-image" aria-hidden="true"><span>{{ item.type[:1] }}</span></div>
+          <div><strong>{{ item.id }}</strong><small>{{ item.type }}</small></div>
+        </article>
+      {% endfor %}
+    </section>
     <section class="equipment-grid">
       {% for item in equipment %}
         <article class="equipment-card">
@@ -117,4 +126,5 @@
       {% endfor %}
     </section>
   {% endif %}
+  </div>
 {% endblock %}

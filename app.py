@@ -359,7 +359,7 @@ def external_equipment_rows(filters):
             FROM registo_equipamentos
             WHERE {' AND '.join(clauses) if clauses else 'TRUE'}
             ORDER BY numero_cliente, tipo_equipamento, numero_equipamento
-            LIMIT 500
+            LIMIT 20
             """,
             params,
         )

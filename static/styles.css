@@ -602,6 +602,50 @@ select:focus {
   color: var(--text);
 }
 
+.equipment-preview-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.equipment-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.equipment-preview-image {
+  display: grid;
+  flex: 0 0 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #202020 0 55%, var(--brand) 55% 100%);
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.equipment-preview strong,
+.equipment-preview small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-preview small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
 .equipment-card {
   display: grid;
   gap: 10px;
@@ -874,5 +918,9 @@ textarea:focus {
   .equipment-results-meta {
     flex-direction: column;
     gap: 4px;
+  }
+
+  .equipment-preview-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
