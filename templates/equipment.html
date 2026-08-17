@@ -1,24 +1,117 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <header class="page-header">
+  <header class="equipment-page-header">
+    <div class="equipment-title-mark">E</div>
     <div>
       <span class="eyebrow">Contrato e ativos</span>
       <h1>Lista de equipamentos</h1>
-      <p>Equipamentos abrangidos pelo contrato de manutenção.</p>
+      <p>Pesquise pelo número de cliente, equipamento, tipo, marca ou modelo.</p>
     </div>
+    <span class="readonly-badge">Apenas leitura</span>
   </header>
-  <section class="equipment-grid">
-    {% for item in equipment %}
-      <article class="equipment-card">
-        <span class="equipment-id">{{ item.id }}</span>
-        <h2>{{ item.name }}</h2>
-        <p>{{ item.location }}</p>
-        <div class="equipment-footer">
-          <span class="status {{ 'status-watch' if item.status == 'Acompanhar' else 'status-good' }}">{{ item.status }}</span>
-          <small>Próxima manutenção: {{ item.next_service }}</small>
-        </div>
-      </article>
-    {% endfor %}
-  </section>
+
+  <form class="equipment-filters" method="get">
+    <label class="search-field">
+      <span class="sr-only">Pesquisar equipamentos</span>
+      <input type="search" name="q" value="{{ filters.q }}" placeholder="Pesquisar por n.º de cliente ou n.º de equipamento...">
+    </label>
+
+    <div class="filter-selects">
+      <label>
+        Número de cliente
+        <select name="cliente">
+          <option value="">Todos os clientes autorizados</option>
+          {% for number in client_numbers %}
+            <option value="{{ number }}" {% if filters.cliente == number %}selected{% endif %}>{{ number }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Tipo de equipamento
+        <select name="tipo">
+          <option value="">Todos os tipos</option>
+          {% for type in equipment_types %}
+            <option value="{{ type }}" {% if filters.tipo == type %}selected{% endif %}>{{ type }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <input type="hidden" name="garantia" value="{{ filters.garantia }}">
+      <input type="hidden" name="vista" value="{{ filters.vista }}">
+      <button class="filter-submit" type="submit">Procurar</button>
+    </div>
+
+    <div class="filter-actions" aria-label="Filtros rápidos">
+      <a class="filter-chip {% if not filters.garantia %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, vista=filters.vista) }}">Todos</a>
+      <a class="filter-chip {% if filters.garantia == '1' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia='1', vista=filters.vista) }}">Em garantia</a>
+      <a class="filter-chip {% if filters.garantia == '0' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia='0', vista=filters.vista) }}">Sem garantia</a>
+      <span class="filter-divider"></span>
+      <a class="filter-chip {% if filters.vista == 'cartoes' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia=filters.garantia, vista='cartoes') }}">Cartões</a>
+      <a class="filter-chip {% if filters.vista == 'tabela' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia=filters.garantia, vista='tabela') }}">Tabela</a>
+    </div>
+  </form>
+
+  <div class="equipment-results-meta">
+    <strong>{{ equipment|length }} equipamento{% if equipment|length != 1 %}s{% endif %}</strong>
+    <span>{{ source_label }}</span>
+  </div>
+
+  {% if error %}
+    <section class="empty-state error-state">
+      <h2>Consulta indisponível</h2>
+      <p>{{ error }}</p>
+    </section>
+  {% elif not equipment %}
+    <section class="empty-state">
+      <h2>Sem resultados</h2>
+      <p>Não foram encontrados equipamentos com os filtros selecionados.</p>
+    </section>
+  {% elif filters.vista == "tabela" %}
+    <div class="equipment-table-wrap">
+      <table class="equipment-table">
+        <thead>
+          <tr>
+            <th>Equipamento</th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Marca / modelo</th>
+            <th>Localização</th>
+            <th>Garantia</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in equipment %}
+            <tr>
+              <td><strong>{{ item.id }}</strong></td>
+              <td>{{ item.numero_cliente }}</td>
+              <td>{{ item.type }}</td>
+              <td>{{ item.brand }} / {{ item.model }}</td>
+              <td>{{ item.location }}</td>
+              <td>{% if item.in_warranty %}Até {{ item.warranty_until }}{% else %}Sem garantia{% endif %}</td>
+              <td><span class="status {{ 'status-good' if item.status in ['Operacional', 'Bom'] else 'status-watch' }}">{{ item.status }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <section class="equipment-grid">
+      {% for item in equipment %}
+        <article class="equipment-card">
+          <div class="equipment-card-topline">
+            <span class="equipment-id">{{ item.id }}</span>
+            <span class="status {{ 'status-good' if item.status in ['Operacional', 'Bom'] else 'status-watch' }}">{{ item.status }}</span>
+          </div>
+          <h2>{{ item.name }}</h2>
+          <p>{{ item.brand }} · {{ item.model }}</p>
+          <dl class="equipment-details">
+            <div><dt>Cliente</dt><dd>{{ item.numero_cliente }}</dd></div>
+            <div><dt>Localização</dt><dd>{{ item.location }}</dd></div>
+            <div><dt>Garantia</dt><dd>{% if item.in_warranty %}Até {{ item.warranty_until }}{% else %}Sem garantia{% endif %}</dd></div>
+          </dl>
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
 {% endblock %}

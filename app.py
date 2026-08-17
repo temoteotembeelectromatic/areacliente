@@ -6,6 +6,8 @@ from datetime import date, timedelta
 from io import BytesIO
 from functools import wraps
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
@@ -36,6 +38,14 @@ CONTROLLER_ADDRESS = os.environ.get("CONTROLLER_ADDRESS", "").strip()
 PRIVACY_EMAIL = os.environ.get("PRIVACY_EMAIL", "").strip()
 PRIVACY_UPDATED_AT = os.environ.get("PRIVACY_UPDATED_AT", "2026-08-17")
 CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
+DATABASE_URL_2 = os.environ.get("DATABASE_URL_2", "").strip()
+CLIENT_ALLOWED_NUMBERS = [
+    value.strip()
+    for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
+    if value.strip()
+]
+if not DATABASE_URL_2 and not CLIENT_ALLOWED_NUMBERS:
+    CLIENT_ALLOWED_NUMBERS = ["TESTE-001"]
 
 if not CLIENT_EMAIL:
     raise RuntimeError("CLIENT_EMAIL tem de estar definido nas variaveis de ambiente.")
@@ -78,10 +88,10 @@ summary_cards = [
 ]
 
 equipment = [
-    {"id": "EQ-001", "name": "Quadro geral de baixa tensao", "location": "Edificio principal", "status": "Operacional", "next_service": "2026-10-14"},
-    {"id": "EQ-002", "name": "Grupo gerador 250 kVA", "location": "Zona técnica", "status": "Operacional", "next_service": "2026-09-20"},
-    {"id": "EQ-003", "name": "Sistema UPS", "location": "Sala de servidores", "status": "Acompanhar", "next_service": "2026-09-02"},
-    {"id": "EQ-004", "name": "Iluminação de emergência", "location": "Instalação completa", "status": "Operacional", "next_service": "2026-11-10"},
+    {"id": "EQ-001", "numero_cliente": "TESTE-001", "name": "Quadro geral de baixa tensão", "type": "Quadro elétrico", "brand": "Schneider", "model": "Prisma", "location": "Edifício principal", "status": "Operacional", "warranty_until": "2027-04-30", "in_warranty": True, "next_service": "2026-10-14"},
+    {"id": "EQ-002", "numero_cliente": "TESTE-001", "name": "Grupo gerador 250 kVA", "type": "Grupo gerador", "brand": "Cummins", "model": "C250", "location": "Zona técnica", "status": "Operacional", "warranty_until": None, "in_warranty": False, "next_service": "2026-09-20"},
+    {"id": "EQ-003", "numero_cliente": "TESTE-001", "name": "Sistema UPS", "type": "UPS", "brand": "Eaton", "model": "93PM", "location": "Sala de servidores", "status": "Acompanhar", "warranty_until": "2026-11-15", "in_warranty": True, "next_service": "2026-09-02"},
+    {"id": "EQ-004", "numero_cliente": "TESTE-001", "name": "Iluminação de emergência", "type": "Iluminação", "brand": "Legrand", "model": "URA", "location": "Instalação completa", "status": "Operacional", "warranty_until": None, "in_warranty": False, "next_service": "2026-11-10"},
 ]
 
 maintenance = [
@@ -214,6 +224,141 @@ def pdf_response(filename, items):
     return send_file(output, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
 
+def get_equipment_filters():
+    return {
+        "q": request.args.get("q", "").strip()[:100],
+        "cliente": request.args.get("cliente", "").strip(),
+        "tipo": request.args.get("tipo", "").strip()[:100],
+        "garantia": request.args.get("garantia", "").strip(),
+        "vista": "tabela" if request.args.get("vista") == "tabela" else "cartoes",
+    }
+
+
+def demo_equipment_rows(filters):
+    rows = list(equipment)
+    selected_client = filters["cliente"] if filters["cliente"] in CLIENT_ALLOWED_NUMBERS else ""
+    if selected_client:
+        rows = [row for row in rows if row["numero_cliente"] == selected_client]
+    if filters["tipo"]:
+        rows = [row for row in rows if row["type"] == filters["tipo"]]
+    if filters["garantia"] == "1":
+        rows = [row for row in rows if row["in_warranty"]]
+    elif filters["garantia"] == "0":
+        rows = [row for row in rows if not row["in_warranty"]]
+    if filters["q"]:
+        query = filters["q"].casefold()
+        rows = [
+            row
+            for row in rows
+            if query in " ".join(str(value or "") for value in row.values()).casefold()
+        ]
+    types = sorted({row["type"] for row in equipment})
+    return rows, types, None, "Dados de demonstração"
+
+
+def external_equipment_rows(filters):
+    if not DATABASE_URL_2:
+        return demo_equipment_rows(filters)
+    if not CLIENT_ALLOWED_NUMBERS:
+        return [], [], "Não existem números de cliente autorizados para esta conta.", "Base de dados externa"
+
+    selected_client = filters["cliente"]
+    if selected_client and selected_client not in CLIENT_ALLOWED_NUMBERS:
+        selected_client = ""
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute(
+            """
+            SELECT DISTINCT COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') AS tipo
+            FROM registo_equipamentos
+            WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)
+            ORDER BY tipo
+            """,
+            (CLIENT_ALLOWED_NUMBERS,),
+        )
+        types = [row["tipo"] for row in cursor.fetchall()]
+
+        clauses = ["TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"]
+        params = [CLIENT_ALLOWED_NUMBERS]
+        if selected_client:
+            clauses.append("TRIM(COALESCE(numero_cliente, '')) = %s")
+            params.append(selected_client)
+        if filters["tipo"]:
+            clauses.append("COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') = %s")
+            params.append(filters["tipo"])
+        if filters["garantia"] == "1":
+            clauses.append("validade_garantia >= CURRENT_DATE")
+        elif filters["garantia"] == "0":
+            clauses.append("(validade_garantia IS NULL OR validade_garantia < CURRENT_DATE)")
+        if filters["q"]:
+            like_query = f"%{filters['q']}%"
+            clauses.append(
+                """
+                (COALESCE(numero_equipamento, '') ILIKE %s
+                 OR COALESCE(numero_cliente, '') ILIKE %s
+                 OR COALESCE(tipo_equipamento, '') ILIKE %s
+                 OR COALESCE(marca, '') ILIKE %s
+                 OR COALESCE(modelo, '') ILIKE %s)
+                """
+            )
+            params.extend([like_query] * 5)
+
+        cursor.execute(
+            f"""
+            SELECT
+                id,
+                COALESCE(NULLIF(TRIM(numero_equipamento), ''), CAST(id AS TEXT)) AS numero_equipamento,
+                TRIM(COALESCE(numero_cliente, '')) AS numero_cliente,
+                COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') AS tipo_equipamento,
+                COALESCE(NULLIF(TRIM(marca), ''), '-') AS marca,
+                COALESCE(NULLIF(TRIM(modelo), ''), '-') AS modelo,
+                COALESCE(NULLIF(TRIM(posicao), ''), '-') AS posicao,
+                COALESCE(NULLIF(TRIM(estado_geral), ''), 'Sem estado') AS estado_geral,
+                validade_garantia,
+                data_instalacao,
+                (validade_garantia IS NOT NULL AND validade_garantia >= CURRENT_DATE) AS em_garantia
+            FROM registo_equipamentos
+            WHERE {' AND '.join(clauses)}
+            ORDER BY numero_cliente, tipo_equipamento, numero_equipamento
+            LIMIT 500
+            """,
+            params,
+        )
+        rows = [
+            {
+                "id": row["numero_equipamento"],
+                "numero_cliente": row["numero_cliente"],
+                "name": row["tipo_equipamento"],
+                "type": row["tipo_equipamento"],
+                "brand": row["marca"],
+                "model": row["modelo"],
+                "location": row["posicao"],
+                "status": row["estado_geral"],
+                "warranty_until": row["validade_garantia"],
+                "in_warranty": bool(row["em_garantia"]),
+                "installed_at": row["data_instalacao"],
+            }
+            for row in cursor.fetchall()
+        ]
+        return rows, types, None, "Base de dados externa · Apenas leitura"
+    except psycopg2.Error:
+        app.logger.exception("Falha ao consultar DATABASE_URL_2")
+        return [], [], "Não foi possível consultar os equipamentos neste momento.", "Base de dados externa"
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+
+
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -333,7 +478,17 @@ def pedidos():
 @app.route("/equipamentos")
 @login_required
 def equipamentos():
-    return render_template("equipment.html", equipment=equipment)
+    filters = get_equipment_filters()
+    rows, types, error, source_label = external_equipment_rows(filters)
+    return render_template(
+        "equipment.html",
+        equipment=rows,
+        equipment_types=types,
+        client_numbers=CLIENT_ALLOWED_NUMBERS,
+        filters=filters,
+        source_label=source_label,
+        error=error,
+    )
 
 
 @app.route("/manutencao")

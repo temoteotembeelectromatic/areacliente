@@ -10,6 +10,19 @@ Portal inicial em Flask para uma área reservada de cliente.
 - Download de PDFs individuais ou num único ficheiro conjunto.
 - Contacto com gestor de contrato e assistente de orientação inicial.
 
+## Base de dados externa de equipamentos
+
+A página `/equipamentos` lê a tabela `registo_equipamentos` através de `DATABASE_URL_2`. A ligação abre com transações somente de leitura, timeout de cinco segundos e limite de 500 resultados. A rota aceita apenas pedidos `GET`.
+
+No Render, configure:
+
+```text
+DATABASE_URL_2=postgresql://...
+CLIENT_ALLOWED_NUMBERS=NUMERO_CLIENTE_1,NUMERO_CLIENTE_2
+```
+
+`CLIENT_ALLOWED_NUMBERS` é obrigatório para limitar cada portal aos clientes autorizados. Use na base externa uma credencial PostgreSQL que também tenha apenas permissão `SELECT` sobre `registo_equipamentos`.
+
 ## Arranque local
 
 ```bash

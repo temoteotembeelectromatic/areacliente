@@ -64,6 +64,16 @@ class LoginSecurityTests(unittest.TestCase):
         documents = self.client.get("/documentos")
         self.assertIn("Descarregar PDF conjunto", documents.get_data(as_text=True))
 
+        equipment_page = self.client.get("/equipamentos?q=UPS")
+        equipment_html = equipment_page.get_data(as_text=True)
+        self.assertEqual(equipment_page.status_code, 200)
+        self.assertIn("Apenas leitura", equipment_html)
+        self.assertIn("Sistema UPS", equipment_html)
+        self.assertEqual(equipment_html.count('class="equipment-card"'), 1)
+
+        write_attempt = self.client.post("/equipamentos", data={"name": "Alterar"})
+        self.assertEqual(write_attempt.status_code, 405)
+
         bundle = self.client.get("/documentos/bundle.pdf")
         self.assertEqual(bundle.status_code, 200)
         self.assertEqual(bundle.mimetype, "application/pdf")
