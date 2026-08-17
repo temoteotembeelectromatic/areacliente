@@ -39,6 +39,7 @@ PRIVACY_EMAIL = os.environ.get("PRIVACY_EMAIL", "").strip()
 PRIVACY_UPDATED_AT = os.environ.get("PRIVACY_UPDATED_AT", "2026-08-17")
 CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
 DATABASE_URL_2 = os.environ.get("DATABASE_URL_2", "").strip()
+EQUIPMENT_TEST_MODE = os.environ.get("EQUIPMENT_TEST_MODE", "false").lower() == "true"
 CLIENT_ALLOWED_NUMBERS = [
     value.strip()
     for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
@@ -88,10 +89,10 @@ summary_cards = [
 ]
 
 equipment = [
-    {"id": "EQ-001", "numero_cliente": "TESTE-001", "name": "Quadro geral de baixa tensão", "type": "Quadro elétrico", "brand": "Schneider", "model": "Prisma", "location": "Edifício principal", "status": "Operacional", "warranty_until": "2027-04-30", "in_warranty": True, "next_service": "2026-10-14"},
-    {"id": "EQ-002", "numero_cliente": "TESTE-001", "name": "Grupo gerador 250 kVA", "type": "Grupo gerador", "brand": "Cummins", "model": "C250", "location": "Zona técnica", "status": "Operacional", "warranty_until": None, "in_warranty": False, "next_service": "2026-09-20"},
-    {"id": "EQ-003", "numero_cliente": "TESTE-001", "name": "Sistema UPS", "type": "UPS", "brand": "Eaton", "model": "93PM", "location": "Sala de servidores", "status": "Acompanhar", "warranty_until": "2026-11-15", "in_warranty": True, "next_service": "2026-09-02"},
-    {"id": "EQ-004", "numero_cliente": "TESTE-001", "name": "Iluminação de emergência", "type": "Iluminação", "brand": "Legrand", "model": "URA", "location": "Instalação completa", "status": "Operacional", "warranty_until": None, "in_warranty": False, "next_service": "2026-11-10"},
+    {"id": "EQ-001", "numero_cliente": "TESTE-001", "numero_contrato": "CTR-2026-001", "name": "Quadro geral de baixa tensão", "type": "Quadro elétrico", "brand": "Schneider", "model": "Prisma", "location": "Edifício principal", "status": "Operacional", "warranty_until": "2027-04-30", "in_warranty": True, "next_service": "2026-10-14"},
+    {"id": "EQ-002", "numero_cliente": "TESTE-001", "numero_contrato": "CTR-2026-001", "name": "Grupo gerador 250 kVA", "type": "Grupo gerador", "brand": "Cummins", "model": "C250", "location": "Zona técnica", "status": "Operacional", "warranty_until": None, "in_warranty": False, "next_service": "2026-09-20"},
+    {"id": "EQ-003", "numero_cliente": "TESTE-001", "numero_contrato": "CTR-2026-001", "name": "Sistema UPS", "type": "UPS", "brand": "Eaton", "model": "93PM", "location": "Sala de servidores", "status": "Acompanhar", "warranty_until": "2026-11-15", "in_warranty": True, "next_service": "2026-09-02"},
+    {"id": "EQ-004", "numero_cliente": "TESTE-001", "numero_contrato": "CTR-2026-001", "name": "Iluminação de emergência", "type": "Iluminação", "brand": "Legrand", "model": "URA", "location": "Instalação completa", "status": "Operacional", "warranty_until": None, "in_warranty": False, "next_service": "2026-11-10"},
 ]
 
 maintenance = [
@@ -253,18 +254,15 @@ def demo_equipment_rows(filters):
             if query in " ".join(str(value or "") for value in row.values()).casefold()
         ]
     types = sorted({row["type"] for row in equipment})
-    return rows, types, None, "Dados de demonstração"
+    clients = sorted({row["numero_cliente"] for row in equipment})
+    return rows, types, clients, None, "Dados de demonstração"
 
 
 def external_equipment_rows(filters):
     if not DATABASE_URL_2:
         return demo_equipment_rows(filters)
-    if not CLIENT_ALLOWED_NUMBERS:
-        return [], [], "Não existem números de cliente autorizados para esta conta.", "Base de dados externa"
-
-    selected_client = filters["cliente"]
-    if selected_client and selected_client not in CLIENT_ALLOWED_NUMBERS:
-        selected_client = ""
+    if not CLIENT_ALLOWED_NUMBERS and not EQUIPMENT_TEST_MODE:
+        return [], [], [], "Não existem números de cliente autorizados para esta conta.", "Base de dados externa"
 
     connection = None
     try:
@@ -276,19 +274,44 @@ def external_equipment_rows(filters):
         connection.set_session(readonly=True, autocommit=False)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
 
+        scope_clause = ""
+        scope_params = []
+        if CLIENT_ALLOWED_NUMBERS:
+            scope_clause = "WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"
+            scope_params.append(CLIENT_ALLOWED_NUMBERS)
+
         cursor.execute(
-            """
+            f"""
+            SELECT DISTINCT TRIM(COALESCE(numero_cliente, '')) AS numero_cliente
+            FROM registo_equipamentos
+            {scope_clause}
+            ORDER BY numero_cliente
+            LIMIT 250
+            """,
+            scope_params,
+        )
+        client_numbers = [row["numero_cliente"] for row in cursor.fetchall() if row["numero_cliente"]]
+
+        cursor.execute(
+            f"""
             SELECT DISTINCT COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') AS tipo
             FROM registo_equipamentos
-            WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)
+            {scope_clause}
             ORDER BY tipo
             """,
-            (CLIENT_ALLOWED_NUMBERS,),
+            scope_params,
         )
         types = [row["tipo"] for row in cursor.fetchall()]
 
-        clauses = ["TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"]
-        params = [CLIENT_ALLOWED_NUMBERS]
+        selected_client = filters["cliente"]
+        if selected_client and selected_client not in client_numbers:
+            selected_client = ""
+
+        clauses = []
+        params = []
+        if CLIENT_ALLOWED_NUMBERS:
+            clauses.append("TRIM(COALESCE(numero_cliente, '')) = ANY(%s)")
+            params.append(CLIENT_ALLOWED_NUMBERS)
         if selected_client:
             clauses.append("TRIM(COALESCE(numero_cliente, '')) = %s")
             params.append(selected_client)
@@ -305,12 +328,13 @@ def external_equipment_rows(filters):
                 """
                 (COALESCE(numero_equipamento, '') ILIKE %s
                  OR COALESCE(numero_cliente, '') ILIKE %s
+                 OR COALESCE(numero_contrato, '') ILIKE %s
                  OR COALESCE(tipo_equipamento, '') ILIKE %s
                  OR COALESCE(marca, '') ILIKE %s
                  OR COALESCE(modelo, '') ILIKE %s)
                 """
             )
-            params.extend([like_query] * 5)
+            params.extend([like_query] * 6)
 
         cursor.execute(
             f"""
@@ -318,6 +342,7 @@ def external_equipment_rows(filters):
                 id,
                 COALESCE(NULLIF(TRIM(numero_equipamento), ''), CAST(id AS TEXT)) AS numero_equipamento,
                 TRIM(COALESCE(numero_cliente, '')) AS numero_cliente,
+                TRIM(COALESCE(numero_contrato, '')) AS numero_contrato,
                 COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') AS tipo_equipamento,
                 COALESCE(NULLIF(TRIM(marca), ''), '-') AS marca,
                 COALESCE(NULLIF(TRIM(modelo), ''), '-') AS modelo,
@@ -327,7 +352,7 @@ def external_equipment_rows(filters):
                 data_instalacao,
                 (validade_garantia IS NOT NULL AND validade_garantia >= CURRENT_DATE) AS em_garantia
             FROM registo_equipamentos
-            WHERE {' AND '.join(clauses)}
+            WHERE {' AND '.join(clauses) if clauses else 'TRUE'}
             ORDER BY numero_cliente, tipo_equipamento, numero_equipamento
             LIMIT 500
             """,
@@ -337,6 +362,7 @@ def external_equipment_rows(filters):
             {
                 "id": row["numero_equipamento"],
                 "numero_cliente": row["numero_cliente"],
+                "numero_contrato": row["numero_contrato"],
                 "name": row["tipo_equipamento"],
                 "type": row["tipo_equipamento"],
                 "brand": row["marca"],
@@ -349,10 +375,11 @@ def external_equipment_rows(filters):
             }
             for row in cursor.fetchall()
         ]
-        return rows, types, None, "Base de dados externa · Apenas leitura"
+        source_label = "Base de dados externa · Teste · Apenas leitura" if EQUIPMENT_TEST_MODE else "Base de dados externa · Apenas leitura"
+        return rows, types, client_numbers, None, source_label
     except psycopg2.Error:
         app.logger.exception("Falha ao consultar DATABASE_URL_2")
-        return [], [], "Não foi possível consultar os equipamentos neste momento.", "Base de dados externa"
+        return [], [], [], "Não foi possível consultar os equipamentos neste momento.", "Base de dados externa"
     finally:
         if connection is not None:
             connection.rollback()
@@ -479,12 +506,12 @@ def pedidos():
 @login_required
 def equipamentos():
     filters = get_equipment_filters()
-    rows, types, error, source_label = external_equipment_rows(filters)
+    rows, types, client_numbers, error, source_label = external_equipment_rows(filters)
     return render_template(
         "equipment.html",
         equipment=rows,
         equipment_types=types,
-        client_numbers=CLIENT_ALLOWED_NUMBERS,
+        client_numbers=client_numbers,
         filters=filters,
         source_label=source_label,
         error=error,

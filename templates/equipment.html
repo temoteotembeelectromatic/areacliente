@@ -6,7 +6,7 @@
     <div>
       <span class="eyebrow">Contrato e ativos</span>
       <h1>Lista de equipamentos</h1>
-      <p>Pesquise pelo número de cliente, equipamento, tipo, marca ou modelo.</p>
+      <p>Pesquise pelo n.º de cliente ou n.º de contrato.</p>
     </div>
     <span class="readonly-badge">Apenas leitura</span>
   </header>
@@ -14,7 +14,7 @@
   <form class="equipment-filters" method="get">
     <label class="search-field">
       <span class="sr-only">Pesquisar equipamentos</span>
-      <input type="search" name="q" value="{{ filters.q }}" placeholder="Pesquisar por n.º de cliente ou n.º de equipamento...">
+      <input type="search" name="q" value="{{ filters.q }}" placeholder="Pesquisar por n.º de cliente ou n.º de contrato...">
     </label>
 
     <div class="filter-selects">
@@ -73,6 +73,7 @@
           <tr>
             <th>Equipamento</th>
             <th>Cliente</th>
+            <th>Contrato</th>
             <th>Tipo</th>
             <th>Marca / modelo</th>
             <th>Localização</th>
@@ -85,6 +86,7 @@
             <tr>
               <td><strong>{{ item.id }}</strong></td>
               <td>{{ item.numero_cliente }}</td>
+              <td>{{ item.numero_contrato }}</td>
               <td>{{ item.type }}</td>
               <td>{{ item.brand }} / {{ item.model }}</td>
               <td>{{ item.location }}</td>
@@ -107,6 +109,7 @@
           <p>{{ item.brand }} · {{ item.model }}</p>
           <dl class="equipment-details">
             <div><dt>Cliente</dt><dd>{{ item.numero_cliente }}</dd></div>
+            <div><dt>Contrato</dt><dd>{{ item.numero_contrato }}</dd></div>
             <div><dt>Localização</dt><dd>{{ item.location }}</dd></div>
             <div><dt>Garantia</dt><dd>{% if item.in_warranty %}Até {{ item.warranty_until }}{% else %}Sem garantia{% endif %}</dd></div>
           </dl>

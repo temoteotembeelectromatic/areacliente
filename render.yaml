@@ -23,5 +23,5 @@ services:
         value: 2026-12-31
       - key: DATABASE_URL_2
         sync: false
-      - key: CLIENT_ALLOWED_NUMBERS
-        value: TESTE-001
+      - key: EQUIPMENT_TEST_MODE
+        sync: false
