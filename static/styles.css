@@ -1,19 +1,19 @@
 :root {
   color-scheme: light;
-  --bg: #edf6f9;
+  --bg: #f4f4f2;
   --surface: #ffffff;
-  --surface-strong: #dceef5;
-  --text: #103342;
-  --muted: #53717d;
-  --border: #b8d7e2;
-  --brand: #087aa8;
-  --brand-dark: #075773;
-  --electric: #48afd4;
-  --electric-soft: #d3edf7;
-  --success: #167464;
+  --surface-strong: #f0ede9;
+  --text: #1b1b1b;
+  --muted: #656565;
+  --border: #dedbd5;
+  --brand: #f58200;
+  --brand-dark: #c96500;
+  --electric: #f6a23b;
+  --electric-soft: #fff0dc;
+  --success: #14735a;
   --warning: #a96700;
   --danger: #b43a32;
-  --shadow: 0 14px 36px rgba(13, 81, 105, 0.12);
+  --shadow: 0 14px 36px rgba(26, 26, 26, 0.1);
 }
 
 * {
@@ -47,7 +47,7 @@ a {
   width: 260px;
   height: 100vh;
   padding: 28px 22px;
-  background: #075773;
+  background: #151515;
   color: #ffffff;
 }
 
@@ -63,14 +63,14 @@ a {
   height: 42px;
   place-items: center;
   border-radius: 8px;
-  background: var(--electric);
-  color: #073d52;
+  background: var(--brand);
+  color: #171717;
   font-weight: 800;
 }
 
 .brand small,
 .nav a {
-  color: #c7d0da;
+  color: #d2d2d2;
 }
 
 .nav {
@@ -126,7 +126,7 @@ a {
   flex-direction: column;
   justify-content: center;
   padding: 56px;
-  background: #075773;
+  background: #151515;
   color: #ffffff;
 }
 
@@ -143,7 +143,7 @@ a {
 }
 
 .login-copy .eyebrow {
-  color: #9bdbef;
+  color: #ffb65d;
 }
 
 h1,
@@ -170,7 +170,7 @@ p {
 
 .login-copy p {
   max-width: 400px;
-  color: #e6eef8;
+  color: #ededed;
   font-size: 1.05rem;
 }
 
@@ -204,7 +204,7 @@ p {
 
 .security-note {
   margin-top: 34px;
-  color: #c7d0da;
+  color: #d2d2d2;
   font-size: 0.9rem;
 }
 
@@ -283,7 +283,7 @@ input {
 
 input:focus {
   border-color: var(--brand);
-  outline: 3px solid rgba(72, 175, 212, 0.28);
+  outline: 3px solid rgba(245, 130, 0, 0.25);
 }
 
 .primary-button {
@@ -291,14 +291,14 @@ input:focus {
   border-radius: 8px;
   padding: 14px 18px;
   background: var(--brand);
-  color: #ffffff;
+  color: #171717;
   cursor: pointer;
   font: inherit;
   font-weight: 800;
 }
 
 .primary-button:hover {
-  background: var(--brand-dark);
+  background: #df7300;
 }
 
 .button-link {
@@ -475,7 +475,7 @@ input:focus {
 }
 
 .equipment-id {
-  color: var(--brand-dark);
+  color: #9a4c00;
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -504,7 +504,7 @@ input:focus {
 }
 
 .status-good {
-  background: #d8f0ea;
+  background: #d7eee6;
   color: #126654;
 }
 
@@ -540,7 +540,7 @@ textarea {
 
 textarea:focus {
   border-color: var(--brand);
-  outline: 3px solid rgba(72, 175, 212, 0.28);
+  outline: 3px solid rgba(245, 130, 0, 0.25);
 }
 
 .assistant-reply {
