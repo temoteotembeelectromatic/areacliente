@@ -216,6 +216,52 @@ p {
   color: var(--brand);
 }
 
+.legal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 36px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.legal-footer a {
+  color: inherit;
+  font-weight: 700;
+}
+
+.legal-footer a:hover {
+  color: var(--brand);
+}
+
+.legal-page {
+  width: min(820px, 100%);
+  margin: 0 auto;
+}
+
+.legal-page h1 {
+  font-size: 2.5rem;
+}
+
+.legal-page h2 {
+  margin-top: 32px;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.legal-page ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.legal-page .panel {
+  margin-top: 24px;
+}
+
 label {
   display: grid;
   gap: 8px;

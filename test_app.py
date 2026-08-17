@@ -9,6 +9,9 @@ os.environ["SECRET_KEY"] = "test-secret-key"
 os.environ["CLIENT_EMAIL"] = "cliente@smartic.pro"
 os.environ["CLIENT_PASSWORD_HASH"] = generate_password_hash("senha-de-teste")
 os.environ["SESSION_COOKIE_SECURE"] = "false"
+os.environ["CONTROLLER_LEGAL_NAME"] = "Smartic Pro, Lda."
+os.environ["CONTROLLER_ADDRESS"] = "Rua Exemplo, 1000-000 Lisboa"
+os.environ["PRIVACY_EMAIL"] = "privacidade@smartic.pro"
 
 import app as portal  # noqa: E402
 
@@ -39,8 +42,13 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertEqual(email_step.status_code, 302)
         self.assertIn("/login/password", email_step.headers["Location"])
 
+        with self.client.session_transaction() as browser_session:
+            self.assertNotIn("login_email", browser_session)
+            self.assertNotIn("cliente@smartic.pro", browser_session.values())
+
         password_page = self.client.get("/login/password")
         self.assertIn("Passo 2 de 2", password_page.get_data(as_text=True))
+        self.assertNotIn("cliente@smartic.pro", password_page.get_data(as_text=True))
 
         login = self.client.post(
             "/login/password",
@@ -48,6 +56,16 @@ class LoginSecurityTests(unittest.TestCase):
         )
         self.assertEqual(login.status_code, 302)
         self.assertIn("/dashboard", login.headers["Location"])
+
+        dashboard = self.client.get("/dashboard")
+        self.assertEqual(dashboard.headers["Cache-Control"], "no-store, max-age=0")
+
+    def test_privacy_information_is_available_without_login(self):
+        response = self.client.get("/privacidade")
+        page = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Smartic Pro, Lda.", page)
+        self.assertIn("privacidade@smartic.pro", page)
 
     def test_post_without_csrf_token_is_rejected(self):
         response = self.client.post("/login", data={"email": "cliente@smartic.pro"})

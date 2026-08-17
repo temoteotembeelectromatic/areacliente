@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="legal-page">
+    <span class="eyebrow">Privacidade</span>
+    <h1>Politica de privacidade</h1>
+    <p>Atualizada em {{ updated_at }}. Esta politica explica como o portal Area do Cliente trata os seus dados pessoais.</p>
+
+    <section class="panel">
+      <h2>Responsavel pelo tratamento</h2>
+      <p><strong>{{ controller_name }}</strong><br>{{ controller_address }}<br><a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a></p>
+    </section>
+
+    <h2>Dados e finalidades</h2>
+    <ul>
+      <li>Dados de acesso: email e palavra-passe, usada apenas para autenticar o acesso. A palavra-passe e guardada sob a forma de hash.</li>
+      <li>Dados da relacao comercial: identificacao, contactos, encomendas, faturas e pedidos de suporte, para prestar o servico contratado.</li>
+      <li>Dados tecnicos de seguranca: endereco IP e registos de tentativas de acesso, para prevenir fraude e acessos indevidos.</li>
+    </ul>
+
+    <h2>Fundamento juridico e conservacao</h2>
+    <p>O tratamento necessario para disponibilizar a area reservada baseia-se na execucao do contrato ou em diligencias pre-contratuais. Os dados de seguranca sao tratados com base no interesse legitimo de proteger o servico. Conservamos os dados apenas pelo periodo necessario para estas finalidades ou pelos prazos legais aplicaveis.</p>
+
+    <h2>Partilha e transferencias</h2>
+    <p>Os dados nao sao vendidos nem usados para publicidade. Podem ser tratados por fornecedores estritamente necessarios ao alojamento e manutencao do portal, sujeitos a medidas de confidencialidade e seguranca adequadas. Qualquer transferencia para fora do EEE deve ter a base legal e garantias aplicaveis.</p>
+
+    <h2 id="direitos">Os seus direitos</h2>
+    <p>Pode pedir acesso, retificacao, apagamento, limitacao, oposicao, portabilidade ou retirar consentimento quando este for a base do tratamento. Pode tambem apresentar reclamacao junto da autoridade de controlo competente.</p>
+    <section class="panel">
+      <h2>Exercer direitos</h2>
+      <p>Envie o seu pedido para <a href="mailto:{{ privacy_email }}?subject=Pedido%20de%20direitos%20RGPD">{{ privacy_email }}</a>. Para proteger a sua conta, podera ser pedida confirmacao da sua identidade antes de executar o pedido.</p>
+    </section>
+  </section>
+{% endblock %}

@@ -11,3 +11,11 @@ services:
         sync: false
       - key: CLIENT_PASSWORD_HASH
         sync: false
+      - key: CONTROLLER_LEGAL_NAME
+        sync: false
+      - key: CONTROLLER_ADDRESS
+        sync: false
+      - key: PRIVACY_EMAIL
+        sync: false
+      - key: PRIVACY_UPDATED_AT
+        value: 2026-08-17

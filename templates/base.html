@@ -43,6 +43,12 @@
         {% endwith %}
 
         {% block content %}{% endblock %}
+
+        <footer class="legal-footer">
+          <a href="{{ url_for('privacidade') }}">Privacidade</a>
+          <a href="{{ url_for('cookies') }}">Cookies</a>
+          <a href="{{ url_for('privacidade') }}#direitos">Os seus direitos</a>
+        </footer>
       </main>
     </div>
   </body>
