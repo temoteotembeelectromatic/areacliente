@@ -72,6 +72,10 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertIn("Sistema UPS", equipment_html)
         self.assertEqual(equipment_html.count('class="equipment-card"'), 1)
 
+        equipment_number_page = self.client.get("/equipamentos?q=EQ-003")
+        self.assertEqual(equipment_number_page.status_code, 200)
+        self.assertEqual(equipment_number_page.get_data(as_text=True).count('class="equipment-card"'), 1)
+
         contract_page = self.client.get("/equipamentos?q=CTR-2026-001")
         self.assertEqual(contract_page.status_code, 200)
         self.assertEqual(contract_page.get_data(as_text=True).count('class="equipment-card"'), 4)
