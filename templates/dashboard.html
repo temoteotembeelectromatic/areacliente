@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Bem-vindo</span>
+      <h1>{{ profile.company }}</h1>
+      <p>Resumo operacional da sua conta Smartic.</p>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+    {% for card in cards %}
+      <article class="summary-card {{ card.tone }}">
+        <span>{{ card.label }}</span>
+        <strong>{{ card.value }}</strong>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="content-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <h2>Encomendas recentes</h2>
+        <a href="{{ url_for('encomendas') }}">Ver todas</a>
+      </div>
+      {% for item in orders %}
+        <div class="row-item">
+          <div>
+            <strong>{{ item.id }}</strong>
+            <span>{{ item.title }}</span>
+          </div>
+          <small>{{ item.status }}</small>
+        </div>
+      {% endfor %}
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <h2>Faturas</h2>
+        <a href="{{ url_for('faturas') }}">Ver todas</a>
+      </div>
+      {% for item in invoices %}
+        <div class="row-item">
+          <div>
+            <strong>{{ item.id }}</strong>
+            <span>{{ item.amount }}</span>
+          </div>
+          <small>{{ item.status }}</small>
+        </div>
+      {% endfor %}
+    </article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Pedidos de suporte</h2>
+      <a href="{{ url_for('pedidos') }}">Ver todos</a>
+    </div>
+    {% for item in requests %}
+      <div class="row-item">
+        <div>
+          <strong>{{ item.id }}</strong>
+          <span>{{ item.subject }}</span>
+        </div>
+        <small>{{ item.status }}</small>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

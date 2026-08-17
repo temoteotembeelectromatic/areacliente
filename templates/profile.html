@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Conta</span>
+      <h1>Perfil do cliente</h1>
+      <p>Informacao principal associada ao acesso.</p>
+    </div>
+  </header>
+
+  <section class="panel profile-panel">
+    <div>
+      <span>Nome</span>
+      <strong>{{ profile.name }}</strong>
+    </div>
+    <div>
+      <span>Empresa</span>
+      <strong>{{ profile.company }}</strong>
+    </div>
+    <div>
+      <span>Email</span>
+      <strong>{{ profile.email }}</strong>
+    </div>
+    <div>
+      <span>Telefone</span>
+      <strong>{{ profile.phone }}</strong>
+    </div>
+    <div>
+      <span>Gestor de conta</span>
+      <strong>{{ profile.account_manager }}</strong>
+    </div>
+  </section>
+{% endblock %}

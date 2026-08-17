@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Area do cliente</span>
+      <h1>{{ title }}</h1>
+      <p>Consulta rapida dos registos associados a sua conta.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    {% for item in items %}
+      <div class="row-item wide">
+        <div>
+          <strong>{{ item.id }}</strong>
+          <span>{{ item.title or item.subject or item.amount }}</span>
+        </div>
+        <div class="row-meta">
+          <small>{{ item.date }}</small>
+          <small>{{ item.status }}</small>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

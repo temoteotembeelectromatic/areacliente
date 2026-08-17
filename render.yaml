@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: area-cliente
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CLIENT_EMAIL
+        value: cliente@smartic.pro
+      - key: CLIENT_PASSWORD
+        sync: false

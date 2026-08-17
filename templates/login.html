@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="login-page">
+    <div class="login-panel">
+      <div class="login-copy">
+        <span class="eyebrow">Smartic Pro</span>
+        <h1>Area do cliente</h1>
+        <p>Acompanhe encomendas, faturas e pedidos de suporte num unico local.</p>
+      </div>
+
+      <form class="login-form" method="post">
+        <label>
+          Email
+          <input type="email" name="email" value="{{ demo_email }}" required>
+        </label>
+        <label>
+          Palavra-passe
+          <input type="password" name="password" placeholder="cliente123" required>
+        </label>
+        <button class="primary-button" type="submit">Entrar</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}
