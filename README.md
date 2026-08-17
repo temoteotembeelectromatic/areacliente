@@ -43,6 +43,16 @@ Cole o resultado em `CLIENT_PASSWORD_HASH`. Nunca use `CLIENT_PASSWORD` nem publ
 
 Para testes locais em HTTP, defina tambem `SESSION_COOKIE_SECURE=false`.
 
+### Valores de teste do Render
+
+O `render.yaml` inclui dados de exemplo para permitir o primeiro deploy. Usa estas credenciais apenas no ambiente de teste:
+
+```text
+Email: cliente.teste@exemplo.pt
+```
+
+No painel do Render, introduza `CLIENT_PASSWORD_HASH` com um hash novo gerado localmente. A palavra-passe nunca deve ser colocada no repositorio. Antes de producao, substitua tambem todos os restantes valores de teste do `render.yaml` pelos dados reais do responsavel pelo tratamento.
+
 ## Privacidade e RGPD
 
 O portal usa apenas o cookie estritamente necessario para a sessao autenticada. Nao tem trackers, publicidade nem cookies de analise. Antes de publicar, preencha no Render a designacao legal, morada e email de privacidade do responsavel pelo tratamento. A politica em `/privacidade` deve ser revista e aprovada pelo responsavel juridico ou de protecao de dados da empresa.

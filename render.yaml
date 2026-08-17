@@ -8,14 +8,14 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CLIENT_EMAIL
-        sync: false
+        value: cliente.teste@exemplo.pt
       - key: CLIENT_PASSWORD_HASH
         sync: false
       - key: CONTROLLER_LEGAL_NAME
-        sync: false
+        value: Smartic Pro - Ambiente de Teste
       - key: CONTROLLER_ADDRESS
-        sync: false
+        value: Morada de teste - substituir antes de producao
       - key: PRIVACY_EMAIL
-        sync: false
+        value: privacidade.teste@exemplo.pt
       - key: PRIVACY_UPDATED_AT
         value: 2026-08-17
