@@ -8,6 +8,6 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CLIENT_EMAIL
-        value: cliente@smartic.pro
-      - key: CLIENT_PASSWORD
+        sync: false
+      - key: CLIENT_PASSWORD_HASH
         sync: false

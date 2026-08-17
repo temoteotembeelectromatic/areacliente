@@ -123,8 +123,12 @@ a {
   flex-direction: column;
   justify-content: center;
   padding: 56px;
-  background: linear-gradient(135deg, #16202c 0%, #1b4f72 55%, #1967d2 100%);
+  background: #111827;
   color: #ffffff;
+}
+
+.login-brand {
+  margin-bottom: 54px;
 }
 
 .eyebrow {
@@ -136,7 +140,7 @@ a {
 }
 
 .login-copy .eyebrow {
-  color: #c8e0ff;
+  color: #7db4ff;
 }
 
 h1,
@@ -172,6 +176,44 @@ p {
   align-content: center;
   gap: 18px;
   padding: 44px;
+}
+
+.login-form h2 {
+  font-size: 1.5rem;
+}
+
+.login-step {
+  color: var(--brand);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.form-copy {
+  margin-bottom: 4px;
+  line-height: 1.55;
+}
+
+.form-copy strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.security-note {
+  margin-top: 34px;
+  color: #c7d0da;
+  font-size: 0.9rem;
+}
+
+.back-link {
+  justify-self: start;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.back-link:hover {
+  color: var(--brand);
 }
 
 label {
