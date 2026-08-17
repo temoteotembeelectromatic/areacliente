@@ -39,7 +39,6 @@ PRIVACY_EMAIL = os.environ.get("PRIVACY_EMAIL", "").strip()
 PRIVACY_UPDATED_AT = os.environ.get("PRIVACY_UPDATED_AT", "2026-08-17")
 CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
 DATABASE_URL_2 = os.environ.get("DATABASE_URL_2", "").strip()
-EQUIPMENT_TEST_MODE = os.environ.get("EQUIPMENT_TEST_MODE", "false").lower() == "true"
 CLIENT_ALLOWED_NUMBERS = [
     value.strip()
     for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
@@ -47,6 +46,12 @@ CLIENT_ALLOWED_NUMBERS = [
 ]
 if not DATABASE_URL_2 and not CLIENT_ALLOWED_NUMBERS:
     CLIENT_ALLOWED_NUMBERS = ["TESTE-001"]
+
+# Durante os testes, a base externa pode ser consultada em modo apenas leitura
+# sem uma lista de clientes autorizados. Em produção, definir a lista e usar
+# EQUIPMENT_TEST_MODE=false para limitar o acesso ao contrato correcto.
+equipment_test_default = "true" if DATABASE_URL_2 and not CLIENT_ALLOWED_NUMBERS else "false"
+EQUIPMENT_TEST_MODE = os.environ.get("EQUIPMENT_TEST_MODE", equipment_test_default).lower() == "true"
 
 if not CLIENT_EMAIL:
     raise RuntimeError("CLIENT_EMAIL tem de estar definido nas variaveis de ambiente.")

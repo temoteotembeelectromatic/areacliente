@@ -24,4 +24,4 @@ services:
       - key: DATABASE_URL_2
         sync: false
       - key: EQUIPMENT_TEST_MODE
-        sync: false
+        value: true
