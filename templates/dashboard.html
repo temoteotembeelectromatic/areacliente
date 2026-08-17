@@ -5,7 +5,7 @@
     <div>
       <span class="eyebrow">Contrato ativo</span>
       <h1>{{ profile.company }}</h1>
-      <p>Acesso ativo ate {{ contract_valid_until }}. Consulte os seus equipamentos, intervencoes e documentos tecnicos.</p>
+      <p>Acesso ativo até {{ contract_valid_until }}. Consulte os seus equipamentos, intervenções e documentos técnicos.</p>
     </div>
   </header>
 
@@ -37,8 +37,8 @@
 
     <article class="panel">
       <div class="panel-header">
-        <h2>Manutencao recente</h2>
-        <a href="{{ url_for('manutencao') }}">Ver historico</a>
+        <h2>Manutenção recente</h2>
+        <a href="{{ url_for('manutencao') }}">Ver histórico</a>
       </div>
       {% for item in maintenance %}
         <div class="row-item">
@@ -57,6 +57,6 @@
       <h2>Documentos e apoio</h2>
       <a href="{{ url_for('apoio') }}">Abrir apoio</a>
     </div>
-    <p class="panel-copy">Relatorios, checklists e guias de desbloqueio ficam reunidos num unico local. Pode descarregar cada ficheiro ou um PDF conjunto.</p>
+    <p class="panel-copy">Relatórios, checklists e guias de desbloqueio ficam reunidos num único local. Pode descarregar cada ficheiro ou um PDF conjunto.</p>
   </section>
 {% endblock %}

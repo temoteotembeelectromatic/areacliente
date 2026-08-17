@@ -5,13 +5,13 @@
     <div>
       <span class="eyebrow">Apoio ao cliente</span>
       <h1>Ajuda e contacto</h1>
-      <p>Orientacao rapida para equipamentos, documentos e manutencao.</p>
+      <p>Orientação rápida para equipamentos, documentos e manutenção.</p>
     </div>
   </header>
   <section class="content-grid">
     <article class="panel support-card">
       <h2>Assistente Electromatic</h2>
-      <p>Escreva uma questao sobre uma avaria, PDF, relatorio ou checklist.</p>
+      <p>Escreva uma questão sobre uma avaria, PDF, relatório ou checklist.</p>
       <form class="support-form" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>
@@ -27,7 +27,7 @@
       <p><strong>{{ profile.account_manager }}</strong></p>
       <p><a href="mailto:{{ profile.manager_email }}">{{ profile.manager_email }}</a><br>{{ profile.manager_phone }}</p>
       <h2 class="support-heading">Piquete</h2>
-      <p>Para ocorrencias urgentes, contacte primeiro o gestor de contrato.</p>
+      <p>Para ocorrências urgentes, contacte primeiro o gestor de contrato.</p>
     </article>
   </section>
   <section class="panel">

@@ -5,7 +5,7 @@
     <div>
       <span class="eyebrow">Contrato e ativos</span>
       <h1>Lista de equipamentos</h1>
-      <p>Equipamentos abrangidos pelo contrato de manutencao.</p>
+      <p>Equipamentos abrangidos pelo contrato de manutenção.</p>
     </div>
   </header>
   <section class="equipment-grid">
@@ -16,7 +16,7 @@
         <p>{{ item.location }}</p>
         <div class="equipment-footer">
           <span class="status {{ 'status-watch' if item.status == 'Acompanhar' else 'status-good' }}">{{ item.status }}</span>
-          <small>Proxima manutencao: {{ item.next_service }}</small>
+          <small>Próxima manutenção: {{ item.next_service }}</small>
         </div>
       </article>
     {% endfor %}

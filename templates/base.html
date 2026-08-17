@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ title or "Area do Cliente" }}</title>
+    <title>{{ title or "Área do Cliente" }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   </head>
   <body>
@@ -14,20 +14,20 @@
             <span class="brand-mark">E</span>
             <div>
               <strong>Electromatic</strong>
-              <small>Area do cliente</small>
+              <small>Área do cliente</small>
             </div>
           </div>
           <nav class="nav">
             <a href="{{ url_for('dashboard') }}">Painel</a>
             <a href="{{ url_for('equipamentos') }}">Equipamentos</a>
-            <a href="{{ url_for('manutencao') }}">Manutencao</a>
+            <a href="{{ url_for('manutencao') }}">Manutenção</a>
             <a href="{{ url_for('documentos') }}">Documentos</a>
             <a href="{{ url_for('apoio') }}">Apoio</a>
             <a href="{{ url_for('perfil') }}">Perfil</a>
           </nav>
           <form method="post" action="{{ url_for('logout') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="ghost-button" type="submit">Terminar sessao</button>
+            <button class="ghost-button" type="submit">Terminar sessão</button>
           </form>
         </aside>
       {% endif %}

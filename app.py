@@ -61,7 +61,7 @@ locked_until = {}
 
 client_profile = {
     "name": "Cliente Electromatic",
-    "company": "Empresa Cliente - Contrato de Manutencao",
+    "company": "Empresa Cliente - Contrato de Manutenção",
     "email": CLIENT_EMAIL,
     "phone": "+351 000 000 000",
     "account_manager": "Gestor de contrato Electromatic",
@@ -71,41 +71,41 @@ client_profile = {
 
 summary_cards = [
     {"label": "Equipamentos cobertos", "value": "4", "tone": "neutral"},
-    {"label": "Preventivas concluidas", "value": "8", "tone": "success"},
-    {"label": "Ocorrencias abertas", "value": "1", "tone": "warning"},
-    {"label": "Contrato valido ate", "value": CONTRACT_VALID_UNTIL, "tone": "neutral"},
+    {"label": "Preventivas concluídas", "value": "8", "tone": "success"},
+    {"label": "Ocorrências abertas", "value": "1", "tone": "warning"},
+    {"label": "Contrato válido até", "value": CONTRACT_VALID_UNTIL, "tone": "neutral"},
 ]
 
 equipment = [
     {"id": "EQ-001", "name": "Quadro geral de baixa tensao", "location": "Edificio principal", "status": "Operacional", "next_service": "2026-10-14"},
-    {"id": "EQ-002", "name": "Grupo gerador 250 kVA", "location": "Zona tecnica", "status": "Operacional", "next_service": "2026-09-20"},
+    {"id": "EQ-002", "name": "Grupo gerador 250 kVA", "location": "Zona técnica", "status": "Operacional", "next_service": "2026-09-20"},
     {"id": "EQ-003", "name": "Sistema UPS", "location": "Sala de servidores", "status": "Acompanhar", "next_service": "2026-09-02"},
-    {"id": "EQ-004", "name": "Iluminacao de emergencia", "location": "Instalacao completa", "status": "Operacional", "next_service": "2026-11-10"},
+    {"id": "EQ-004", "name": "Iluminação de emergência", "location": "Instalação completa", "status": "Operacional", "next_service": "2026-11-10"},
 ]
 
 maintenance = [
-    {"id": "MP-2026-018", "title": "Manutencao preventiva - QGBT", "type": "Preventiva", "status": "Concluida", "date": "2026-08-14", "equipment": "EQ-001", "document_id": "DOC-018"},
-    {"id": "MC-2026-007", "title": "Ocorrencia - alarmes UPS", "type": "Corretiva", "status": "Em acompanhamento", "date": "2026-08-16", "equipment": "EQ-003", "document_id": "DOC-019"},
-    {"id": "MP-2026-016", "title": "Teste de iluminacao de emergencia", "type": "Preventiva", "status": "Concluida", "date": "2026-07-22", "equipment": "EQ-004", "document_id": "DOC-016"},
+    {"id": "MP-2026-018", "title": "Manutenção preventiva - QGBT", "type": "Preventiva", "status": "Concluída", "date": "2026-08-14", "equipment": "EQ-001", "document_id": "DOC-018"},
+    {"id": "MC-2026-007", "title": "Ocorrência - alarmes UPS", "type": "Corretiva", "status": "Em acompanhamento", "date": "2026-08-16", "equipment": "EQ-003", "document_id": "DOC-019"},
+    {"id": "MP-2026-016", "title": "Teste de iluminação de emergência", "type": "Preventiva", "status": "Concluída", "date": "2026-07-22", "equipment": "EQ-004", "document_id": "DOC-016"},
 ]
 
 documents = [
-    {"id": "DOC-018", "title": "Relatorio preventivo QGBT", "category": "Manutencao preventiva", "date": "2026-08-14"},
-    {"id": "DOC-019", "title": "Relatorio de ocorrencia UPS", "category": "Manutencao corretiva", "date": "2026-08-16"},
+    {"id": "DOC-018", "title": "Relatório preventivo QGBT", "category": "Manutenção preventiva", "date": "2026-08-14"},
+    {"id": "DOC-019", "title": "Relatório de ocorrência UPS", "category": "Manutenção corretiva", "date": "2026-08-16"},
     {"id": "DOC-016", "title": "Checklist iluminacao de emergencia", "category": "Checklist", "date": "2026-07-22"},
-    {"id": "DOC-003", "title": "Guia de desbloqueio do grupo gerador", "category": "Guia tecnico", "date": "2026-06-03"},
+    {"id": "DOC-003", "title": "Guia de desbloqueio do grupo gerador", "category": "Guia técnico", "date": "2026-06-03"},
 ]
 
 guides = [
     "Consulte o guia de desbloqueio antes de contactar a piquete.",
-    "Os checklists de manutencao preventiva ficam disponiveis apos cada intervencao.",
-    "Para uma avaria urgente, contacte a piquete atraves do gestor de contrato.",
+    "Os checklists de manutenção preventiva ficam disponíveis após cada intervenção.",
+    "Para uma avaria urgente, contacte a piquete através do gestor de contrato.",
 ]
 
 orders = [
     {"id": "ENC-24081", "title": "Material eletrico obra norte", "status": "Em processamento", "date": "2026-08-16"},
-    {"id": "ENC-24077", "title": "Quadro tecnico QGBT", "status": "A aguardar fornecedor", "date": "2026-08-13"},
-    {"id": "ENC-24069", "title": "Consumiveis manutencao", "status": "Entregue", "date": "2026-08-05"},
+    {"id": "ENC-24077", "title": "Quadro técnico QGBT", "status": "A aguardar fornecedor", "date": "2026-08-13"},
+    {"id": "ENC-24069", "title": "Consumíveis de manutenção", "status": "Entregue", "date": "2026-08-05"},
 ]
 
 invoices = [
@@ -115,9 +115,9 @@ invoices = [
 ]
 
 requests_list = [
-    {"id": "SUP-1021", "subject": "Pedido de intervencao", "status": "Aberto", "date": "2026-08-16"},
+    {"id": "SUP-1021", "subject": "Pedido de intervenção", "status": "Aberto", "date": "2026-08-16"},
     {"id": "SUP-1017", "subject": "Duvida sobre fatura", "status": "Em analise", "date": "2026-08-14"},
-    {"id": "SUP-1008", "subject": "Atualizacao de contactos", "status": "Resolvido", "date": "2026-08-09"},
+    {"id": "SUP-1008", "subject": "Atualização de contactos", "status": "Resolvido", "date": "2026-08-09"},
 ]
 
 
@@ -128,7 +128,7 @@ def login_required(view):
             return redirect(url_for("login"))
         if not is_contract_active():
             session.clear()
-            flash("O acesso esta suspenso porque o contrato indicado terminou.", "error")
+            flash("O acesso está suspenso porque o contrato indicado terminou.", "error")
             return redirect(url_for("login"))
         return view(*args, **kwargs)
 
@@ -188,10 +188,10 @@ def pdf_response(filename, items):
     y = page_height - 64
     pdf.setTitle("Documentos Electromatic")
     pdf.setFont("Helvetica-Bold", 17)
-    pdf.drawString(48, y, "Electromatic | Area de cliente")
+    pdf.drawString(48, y, "Electromatic | Área de cliente")
     y -= 34
     pdf.setFont("Helvetica", 10)
-    pdf.drawString(48, y, f"Contrato valido ate: {CONTRACT_VALID_UNTIL}")
+    pdf.drawString(48, y, f"Contrato válido até: {CONTRACT_VALID_UNTIL}")
     y -= 32
 
     for item in items:
@@ -264,7 +264,7 @@ def login_password():
         key = login_key()
 
         if is_login_locked(key):
-            flash("Por seguranca, aguarde alguns minutos antes de tentar novamente.", "error")
+            flash("Por segurança, aguarde alguns minutos antes de tentar novamente.", "error")
             return redirect(url_for("login_password"))
 
         password = request.form.get("password", "")
@@ -272,7 +272,7 @@ def login_password():
 
         if email_matches and password_matches:
             if not is_contract_active():
-                flash("O acesso nao esta disponivel: o contrato indicado terminou.", "error")
+                flash("O acesso não está disponível: o contrato indicado terminou.", "error")
                 return redirect(url_for("login"))
             session.clear()
             session["logged_in"] = True
@@ -281,7 +281,7 @@ def login_password():
             return redirect(url_for("dashboard"))
 
         register_failed_login(key)
-        flash("Nao foi possivel iniciar sessao com estes dados.", "error")
+        flash("Não foi possível iniciar sessão com estes dados.", "error")
         return redirect(url_for("login_password"))
 
     return render_template("login.html", password_step=True)
@@ -367,11 +367,11 @@ def apoio():
         verify_csrf()
         message = request.form.get("message", "").strip().lower()
         if any(term in message for term in ("avaria", "urgente", "piquete")):
-            reply = "Para uma avaria urgente, contacte a piquete atraves do gestor de contrato."
+            reply = "Para uma avaria urgente, contacte a piquete através do gestor de contrato."
         elif any(term in message for term in ("relatorio", "pdf", "checklist")):
-            reply = "Os relatorios e checklists estao disponiveis na area Documentos."
+            reply = "Os relatórios e checklists estão disponíveis na área Documentos."
         else:
-            reply = "Posso orientar sobre equipamentos, manutencao, documentos ou contacto com o gestor."
+            reply = "Posso orientar sobre equipamentos, manutenção, documentos ou contacto com o gestor."
     return render_template("support.html", profile=client_profile, guides=guides, reply=reply)
 
 

@@ -8,13 +8,13 @@
           <span class="brand-mark">E</span>
           <div>
             <strong>Electromatic</strong>
-            <small>Area do cliente</small>
+            <small>Área do cliente</small>
           </div>
         </div>
         <span class="eyebrow">Acesso protegido</span>
         <h1>Bem-vindo de volta.</h1>
-        <p>Entre na sua area reservada para acompanhar encomendas, faturas e suporte.</p>
-        <div class="security-note">Ligacao protegida e sessao com tempo limitado.</div>
+        <p>Entre na sua área reservada para acompanhar encomendas, faturas e suporte.</p>
+        <div class="security-note">Ligação protegida e sessão com tempo limitado.</div>
       </div>
 
       <form class="login-form" method="post">
@@ -22,19 +22,19 @@
         {% if password_step %}
           <div class="login-step">Passo 2 de 2</div>
           <h2>Confirme a sua palavra-passe</h2>
-          <p class="form-copy">Use a palavra-passe associada ao email indicado no passo anterior.</p>
+          <p class="form-copy">Use a palavra-passe associada ao e-mail indicado no passo anterior.</p>
           <label>
             Palavra-passe
             <input type="password" name="password" autocomplete="current-password" autofocus required>
           </label>
-          <button class="primary-button" type="submit">Entrar em seguranca</button>
-          <a class="back-link" href="{{ url_for('login') }}">Usar outro email</a>
+          <button class="primary-button" type="submit">Entrar em segurança</button>
+          <a class="back-link" href="{{ url_for('login') }}">Usar outro e-mail</a>
         {% else %}
           <div class="login-step">Passo 1 de 2</div>
-          <h2>Introduza o seu email</h2>
+          <h2>Introduza o seu e-mail</h2>
           <p class="form-copy">Vamos confirmar o seu acesso antes de pedir a palavra-passe.</p>
           <label>
-            Email profissional
+            E-mail profissional
             <input type="email" name="email" autocomplete="username" autofocus required>
           </label>
           <button class="primary-button" type="submit">Continuar</button>

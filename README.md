@@ -1,14 +1,14 @@
-# Area do Cliente
+# Área do Cliente
 
-Portal inicial em Flask para uma area reservada de cliente.
+Portal inicial em Flask para uma área reservada de cliente.
 
 ## Funcionalidades do MVP
 
-- Acesso em duas fases, disponivel apenas enquanto o contrato estiver ativo.
+- Acesso em duas fases, disponível apenas enquanto o contrato estiver ativo.
 - Lista de equipamentos abrangidos pelo contrato.
-- Historico de manutencao corretiva e preventiva com checklists e relatorios.
-- Download de PDFs individuais ou num unico ficheiro conjunto.
-- Contacto com gestor de contrato e assistente de orientacao inicial.
+- Histórico de manutenção corretiva e preventiva com checklists e relatórios.
+- Download de PDFs individuais ou num único ficheiro conjunto.
+- Contacto com gestor de contrato e assistente de orientação inicial.
 
 ## Arranque local
 
@@ -23,7 +23,7 @@ Depois abre:
 http://127.0.0.1:5000
 ```
 
-Em producao, define estas variaveis no Render:
+Em produção, define estas variáveis no Render:
 
 ```text
 SECRET_KEY
@@ -47,7 +47,7 @@ Gere o hash da palavra-passe antes de configurar o Render:
 python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('A_SUA_PALAVRA_PASSE'))"
 ```
 
-Cole o resultado em `CLIENT_PASSWORD_HASH`. Nunca use `CLIENT_PASSWORD` nem publique uma palavra-passe no repositorio.
+Cole o resultado em `CLIENT_PASSWORD_HASH`. Nunca use `CLIENT_PASSWORD` nem publique uma palavra-passe no repositório.
 
 Para testes locais em HTTP, defina tambem `SESSION_COOKIE_SECURE=false`.
 
@@ -59,8 +59,8 @@ O `render.yaml` inclui dados de exemplo para permitir o primeiro deploy. Usa est
 Email: cliente.teste@exemplo.pt
 ```
 
-No painel do Render, introduza `CLIENT_PASSWORD_HASH` com um hash novo gerado localmente. A palavra-passe nunca deve ser colocada no repositorio. Antes de producao, substitua tambem todos os restantes valores de teste do `render.yaml` pelos dados reais do responsavel pelo tratamento.
+No painel do Render, introduza `CLIENT_PASSWORD_HASH` com um hash novo gerado localmente. A palavra-passe nunca deve ser colocada no repositório. Antes de produção, substitua também todos os restantes valores de teste do `render.yaml` pelos dados reais do responsável pelo tratamento.
 
 ## Privacidade e RGPD
 
-O portal usa apenas o cookie estritamente necessario para a sessao autenticada. Nao tem trackers, publicidade nem cookies de analise. Antes de publicar, preencha no Render a designacao legal, morada e email de privacidade do responsavel pelo tratamento. A politica em `/privacidade` deve ser revista e aprovada pelo responsavel juridico ou de protecao de dados da empresa.
+O portal usa apenas o cookie estritamente necessário para a sessão autenticada. Não tem trackers, publicidade nem cookies de análise. Antes de publicar, preencha no Render a designação legal, morada e e-mail de privacidade do responsável pelo tratamento. A política em `/privacidade` deve ser revista e aprovada pelo responsável jurídico ou de proteção de dados da empresa.
