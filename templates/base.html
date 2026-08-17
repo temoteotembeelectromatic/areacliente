@@ -11,17 +11,18 @@
       {% if session.get("logged_in") %}
         <aside class="sidebar">
           <div class="brand">
-            <span class="brand-mark">S</span>
+            <span class="brand-mark">E</span>
             <div>
-              <strong>Smartic</strong>
+              <strong>Electromatic</strong>
               <small>Area do cliente</small>
             </div>
           </div>
           <nav class="nav">
             <a href="{{ url_for('dashboard') }}">Painel</a>
-            <a href="{{ url_for('encomendas') }}">Encomendas</a>
-            <a href="{{ url_for('faturas') }}">Faturas</a>
-            <a href="{{ url_for('pedidos') }}">Pedidos</a>
+            <a href="{{ url_for('equipamentos') }}">Equipamentos</a>
+            <a href="{{ url_for('manutencao') }}">Manutencao</a>
+            <a href="{{ url_for('documentos') }}">Documentos</a>
+            <a href="{{ url_for('apoio') }}">Apoio</a>
             <a href="{{ url_for('perfil') }}">Perfil</a>
           </nav>
           <form method="post" action="{{ url_for('logout') }}">

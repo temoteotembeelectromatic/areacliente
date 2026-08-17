@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Arquivo tecnico</span>
+      <h1>Documentos</h1>
+      <p>Relatorios, checklists e guias tecnicos associados ao seu contrato.</p>
+    </div>
+    <a class="primary-button button-link" href="{{ url_for('documentos_bundle_pdf') }}">Descarregar PDF conjunto</a>
+  </header>
+  <section class="panel">
+    {% for item in documents %}
+      <div class="row-item wide">
+        <div>
+          <strong>{{ item.title }}</strong>
+          <span>{{ item.id }} · {{ item.category }}</span>
+        </div>
+        <div class="row-meta">
+          <small>{{ item.date }}</small>
+          <a href="{{ url_for('documento_pdf', document_id=item.id) }}">Descarregar PDF</a>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

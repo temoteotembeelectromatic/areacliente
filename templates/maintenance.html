@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Intervencoes</span>
+      <h1>Manutencao</h1>
+      <p>Historico de manutencao preventiva, corretiva e respetivos documentos.</p>
+    </div>
+  </header>
+  <section class="panel">
+    {% for item in maintenance %}
+      <div class="row-item wide">
+        <div>
+          <strong>{{ item.title }}</strong>
+          <span>{{ item.id }} · {{ item.equipment }} · {{ item.type }}</span>
+        </div>
+        <div class="row-meta">
+          <small>{{ item.date }}</small>
+          <span class="status {{ 'status-watch' if item.status == 'Em acompanhamento' else 'status-good' }}">{{ item.status }}</span>
+          <a href="{{ url_for('documento_pdf', document_id=item.document_id) }}">PDF</a>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

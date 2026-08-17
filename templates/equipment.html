@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Contrato e ativos</span>
+      <h1>Lista de equipamentos</h1>
+      <p>Equipamentos abrangidos pelo contrato de manutencao.</p>
+    </div>
+  </header>
+  <section class="equipment-grid">
+    {% for item in equipment %}
+      <article class="equipment-card">
+        <span class="equipment-id">{{ item.id }}</span>
+        <h2>{{ item.name }}</h2>
+        <p>{{ item.location }}</p>
+        <div class="equipment-footer">
+          <span class="status {{ 'status-watch' if item.status == 'Acompanhar' else 'status-good' }}">{{ item.status }}</span>
+          <small>Proxima manutencao: {{ item.next_service }}</small>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}

@@ -1,17 +1,19 @@
 :root {
   color-scheme: light;
-  --bg: #f4f6f8;
+  --bg: #edf6f9;
   --surface: #ffffff;
-  --surface-strong: #eef2f5;
-  --text: #17212b;
-  --muted: #65717d;
-  --border: #dde4ea;
-  --brand: #1967d2;
-  --brand-dark: #114d9c;
-  --success: #13795b;
-  --warning: #a85f00;
-  --danger: #b42318;
-  --shadow: 0 18px 50px rgba(23, 33, 43, 0.08);
+  --surface-strong: #dceef5;
+  --text: #103342;
+  --muted: #53717d;
+  --border: #b8d7e2;
+  --brand: #087aa8;
+  --brand-dark: #075773;
+  --electric: #48afd4;
+  --electric-soft: #d3edf7;
+  --success: #167464;
+  --warning: #a96700;
+  --danger: #b43a32;
+  --shadow: 0 14px 36px rgba(13, 81, 105, 0.12);
 }
 
 * {
@@ -45,7 +47,7 @@ a {
   width: 260px;
   height: 100vh;
   padding: 28px 22px;
-  background: #111827;
+  background: #075773;
   color: #ffffff;
 }
 
@@ -61,7 +63,8 @@ a {
   height: 42px;
   place-items: center;
   border-radius: 8px;
-  background: var(--brand);
+  background: var(--electric);
+  color: #073d52;
   font-weight: 800;
 }
 
@@ -82,7 +85,7 @@ a {
 }
 
 .nav a:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
@@ -123,7 +126,7 @@ a {
   flex-direction: column;
   justify-content: center;
   padding: 56px;
-  background: #111827;
+  background: #075773;
   color: #ffffff;
 }
 
@@ -140,7 +143,7 @@ a {
 }
 
 .login-copy .eyebrow {
-  color: #7db4ff;
+  color: #9bdbef;
 }
 
 h1,
@@ -280,7 +283,7 @@ input {
 
 input:focus {
   border-color: var(--brand);
-  outline: 3px solid rgba(25, 103, 210, 0.18);
+  outline: 3px solid rgba(72, 175, 212, 0.28);
 }
 
 .primary-button {
@@ -296,6 +299,13 @@ input:focus {
 
 .primary-button:hover {
   background: var(--brand-dark);
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .messages {
@@ -380,6 +390,12 @@ input:focus {
   padding: 20px;
 }
 
+.panel-copy {
+  max-width: 720px;
+  margin: 0;
+  line-height: 1.55;
+}
+
 .panel-header {
   display: flex;
   align-items: center;
@@ -432,6 +448,122 @@ input:focus {
   padding-bottom: 0;
 }
 
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.equipment-card {
+  display: grid;
+  gap: 10px;
+  min-height: 190px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--electric);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.equipment-card h2 {
+  font-size: 1.12rem;
+}
+
+.equipment-card p {
+  margin-bottom: 0;
+}
+
+.equipment-id {
+  color: var(--brand-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.equipment-footer {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.equipment-footer small {
+  color: var(--muted);
+  text-align: right;
+}
+
+.status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.status-good {
+  background: #d8f0ea;
+  color: #126654;
+}
+
+.status-watch {
+  background: #fff0d5;
+  color: #825100;
+}
+
+.support-card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.support-card p {
+  margin-bottom: 0;
+}
+
+.support-form {
+  display: grid;
+  gap: 14px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  font: inherit;
+}
+
+textarea:focus {
+  border-color: var(--brand);
+  outline: 3px solid rgba(72, 175, 212, 0.28);
+}
+
+.assistant-reply {
+  padding: 12px;
+  border-left: 4px solid var(--electric);
+  background: var(--electric-soft);
+  color: var(--text);
+}
+
+.support-heading {
+  margin-top: 16px;
+}
+
+.guide-item {
+  margin-bottom: 0;
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+}
+
+.guide-item:first-of-type {
+  border-top: 0;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     display: block;
@@ -453,7 +585,8 @@ input:focus {
 
   .login-panel,
   .content-grid,
-  .summary-grid {
+  .summary-grid,
+  .equipment-grid {
     grid-template-columns: 1fr;
   }
 
@@ -464,5 +597,15 @@ input:focus {
 
   .login-form {
     padding: 30px;
+  }
+
+  .page-header,
+  .equipment-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .equipment-footer small {
+    text-align: left;
   }
 }

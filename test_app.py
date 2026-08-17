@@ -60,6 +60,14 @@ class LoginSecurityTests(unittest.TestCase):
         dashboard = self.client.get("/dashboard")
         self.assertEqual(dashboard.headers["Cache-Control"], "no-store, max-age=0")
 
+        documents = self.client.get("/documentos")
+        self.assertIn("Descarregar PDF conjunto", documents.get_data(as_text=True))
+
+        bundle = self.client.get("/documentos/bundle.pdf")
+        self.assertEqual(bundle.status_code, 200)
+        self.assertEqual(bundle.mimetype, "application/pdf")
+        self.assertTrue(bundle.data.startswith(b"%PDF"))
+
     def test_privacy_information_is_available_without_login(self):
         response = self.client.get("/privacidade")
         page = response.get_data(as_text=True)
@@ -70,6 +78,18 @@ class LoginSecurityTests(unittest.TestCase):
     def test_post_without_csrf_token_is_rejected(self):
         response = self.client.post("/login", data={"email": "cliente@smartic.pro"})
         self.assertEqual(response.status_code, 400)
+
+    def test_expired_contract_blocks_the_dashboard(self):
+        original_expiry = portal.contract_valid_until
+        portal.contract_valid_until = portal.date(2020, 1, 1)
+        try:
+            with self.client.session_transaction() as browser_session:
+                browser_session["logged_in"] = True
+            response = self.client.get("/dashboard")
+            self.assertEqual(response.status_code, 302)
+            self.assertIn("/login", response.headers["Location"])
+        finally:
+            portal.contract_valid_until = original_expiry
 
 
 if __name__ == "__main__":

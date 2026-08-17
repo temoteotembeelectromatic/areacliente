@@ -3,9 +3,9 @@
 {% block content %}
   <header class="page-header">
     <div>
-      <span class="eyebrow">Bem-vindo</span>
+      <span class="eyebrow">Contrato ativo</span>
       <h1>{{ profile.company }}</h1>
-      <p>Resumo operacional da sua conta Smartic.</p>
+      <p>Acesso ativo ate {{ contract_valid_until }}. Consulte os seus equipamentos, intervencoes e documentos tecnicos.</p>
     </div>
   </header>
 
@@ -21,10 +21,26 @@
   <section class="content-grid">
     <article class="panel">
       <div class="panel-header">
-        <h2>Encomendas recentes</h2>
-        <a href="{{ url_for('encomendas') }}">Ver todas</a>
+        <h2>Equipamentos</h2>
+        <a href="{{ url_for('equipamentos') }}">Ver lista</a>
       </div>
-      {% for item in orders %}
+      {% for item in equipment[:3] %}
+        <div class="row-item">
+          <div>
+            <strong>{{ item.id }}</strong>
+            <span>{{ item.name }}</span>
+          </div>
+          <small>{{ item.next_service }}</small>
+        </div>
+      {% endfor %}
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <h2>Manutencao recente</h2>
+        <a href="{{ url_for('manutencao') }}">Ver historico</a>
+      </div>
+      {% for item in maintenance %}
         <div class="row-item">
           <div>
             <strong>{{ item.id }}</strong>
@@ -34,37 +50,13 @@
         </div>
       {% endfor %}
     </article>
-
-    <article class="panel">
-      <div class="panel-header">
-        <h2>Faturas</h2>
-        <a href="{{ url_for('faturas') }}">Ver todas</a>
-      </div>
-      {% for item in invoices %}
-        <div class="row-item">
-          <div>
-            <strong>{{ item.id }}</strong>
-            <span>{{ item.amount }}</span>
-          </div>
-          <small>{{ item.status }}</small>
-        </div>
-      {% endfor %}
-    </article>
   </section>
 
   <section class="panel">
     <div class="panel-header">
-      <h2>Pedidos de suporte</h2>
-      <a href="{{ url_for('pedidos') }}">Ver todos</a>
+      <h2>Documentos e apoio</h2>
+      <a href="{{ url_for('apoio') }}">Abrir apoio</a>
     </div>
-    {% for item in requests %}
-      <div class="row-item">
-        <div>
-          <strong>{{ item.id }}</strong>
-          <span>{{ item.subject }}</span>
-        </div>
-        <small>{{ item.status }}</small>
-      </div>
-    {% endfor %}
+    <p class="panel-copy">Relatorios, checklists e guias de desbloqueio ficam reunidos num unico local. Pode descarregar cada ficheiro ou um PDF conjunto.</p>
   </section>
 {% endblock %}

@@ -2,6 +2,14 @@
 
 Portal inicial em Flask para uma area reservada de cliente.
 
+## Funcionalidades do MVP
+
+- Acesso em duas fases, disponivel apenas enquanto o contrato estiver ativo.
+- Lista de equipamentos abrangidos pelo contrato.
+- Historico de manutencao corretiva e preventiva com checklists e relatorios.
+- Download de PDFs individuais ou num unico ficheiro conjunto.
+- Contacto com gestor de contrato e assistente de orientacao inicial.
+
 ## Arranque local
 
 ```bash

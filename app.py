@@ -2,10 +2,13 @@ import os
 import secrets
 import time
 from collections import defaultdict, deque
-from datetime import timedelta
+from datetime import date, timedelta
+from io import BytesIO
 from functools import wraps
 
-from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash
 
@@ -31,6 +34,7 @@ CONTROLLER_LEGAL_NAME = os.environ.get("CONTROLLER_LEGAL_NAME", "").strip()
 CONTROLLER_ADDRESS = os.environ.get("CONTROLLER_ADDRESS", "").strip()
 PRIVACY_EMAIL = os.environ.get("PRIVACY_EMAIL", "").strip()
 PRIVACY_UPDATED_AT = os.environ.get("PRIVACY_UPDATED_AT", "2026-08-17")
+CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
 
 if not CLIENT_EMAIL:
     raise RuntimeError("CLIENT_EMAIL tem de estar definido nas variaveis de ambiente.")
@@ -43,6 +47,11 @@ if not all((CONTROLLER_LEGAL_NAME, CONTROLLER_ADDRESS, PRIVACY_EMAIL)):
         "CONTROLLER_LEGAL_NAME, CONTROLLER_ADDRESS e PRIVACY_EMAIL tem de estar definidos."
     )
 
+try:
+    contract_valid_until = date.fromisoformat(CONTRACT_VALID_UNTIL)
+except ValueError as error:
+    raise RuntimeError("CONTRACT_VALID_UNTIL deve usar o formato AAAA-MM-DD.") from error
+
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_WINDOW_SECONDS = 15 * 60
 LOGIN_LOCK_SECONDS = 15 * 60
@@ -51,18 +60,46 @@ locked_until = {}
 
 
 client_profile = {
-    "name": "Cliente Smartic",
-    "company": "Empresa Cliente",
+    "name": "Cliente Electromatic",
+    "company": "Empresa Cliente - Contrato de Manutencao",
     "email": CLIENT_EMAIL,
     "phone": "+351 000 000 000",
-    "account_manager": "Equipa Smartic",
+    "account_manager": "Gestor de contrato Electromatic",
+    "manager_email": "gestor@electromatic.pt",
+    "manager_phone": "+351 210 000 000",
 }
 
 summary_cards = [
-    {"label": "Pedidos abertos", "value": "3", "tone": "warning"},
-    {"label": "Faturas pendentes", "value": "2", "tone": "danger"},
-    {"label": "Servicos ativos", "value": "5", "tone": "success"},
-    {"label": "Ultima atualizacao", "value": "Hoje", "tone": "neutral"},
+    {"label": "Equipamentos cobertos", "value": "4", "tone": "neutral"},
+    {"label": "Preventivas concluidas", "value": "8", "tone": "success"},
+    {"label": "Ocorrencias abertas", "value": "1", "tone": "warning"},
+    {"label": "Contrato valido ate", "value": CONTRACT_VALID_UNTIL, "tone": "neutral"},
+]
+
+equipment = [
+    {"id": "EQ-001", "name": "Quadro geral de baixa tensao", "location": "Edificio principal", "status": "Operacional", "next_service": "2026-10-14"},
+    {"id": "EQ-002", "name": "Grupo gerador 250 kVA", "location": "Zona tecnica", "status": "Operacional", "next_service": "2026-09-20"},
+    {"id": "EQ-003", "name": "Sistema UPS", "location": "Sala de servidores", "status": "Acompanhar", "next_service": "2026-09-02"},
+    {"id": "EQ-004", "name": "Iluminacao de emergencia", "location": "Instalacao completa", "status": "Operacional", "next_service": "2026-11-10"},
+]
+
+maintenance = [
+    {"id": "MP-2026-018", "title": "Manutencao preventiva - QGBT", "type": "Preventiva", "status": "Concluida", "date": "2026-08-14", "equipment": "EQ-001", "document_id": "DOC-018"},
+    {"id": "MC-2026-007", "title": "Ocorrencia - alarmes UPS", "type": "Corretiva", "status": "Em acompanhamento", "date": "2026-08-16", "equipment": "EQ-003", "document_id": "DOC-019"},
+    {"id": "MP-2026-016", "title": "Teste de iluminacao de emergencia", "type": "Preventiva", "status": "Concluida", "date": "2026-07-22", "equipment": "EQ-004", "document_id": "DOC-016"},
+]
+
+documents = [
+    {"id": "DOC-018", "title": "Relatorio preventivo QGBT", "category": "Manutencao preventiva", "date": "2026-08-14"},
+    {"id": "DOC-019", "title": "Relatorio de ocorrencia UPS", "category": "Manutencao corretiva", "date": "2026-08-16"},
+    {"id": "DOC-016", "title": "Checklist iluminacao de emergencia", "category": "Checklist", "date": "2026-07-22"},
+    {"id": "DOC-003", "title": "Guia de desbloqueio do grupo gerador", "category": "Guia tecnico", "date": "2026-06-03"},
+]
+
+guides = [
+    "Consulte o guia de desbloqueio antes de contactar a piquete.",
+    "Os checklists de manutencao preventiva ficam disponiveis apos cada intervencao.",
+    "Para uma avaria urgente, contacte a piquete atraves do gestor de contrato.",
 ]
 
 orders = [
@@ -88,6 +125,10 @@ def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
         if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        if not is_contract_active():
+            session.clear()
+            flash("O acesso esta suspenso porque o contrato indicado terminou.", "error")
             return redirect(url_for("login"))
         return view(*args, **kwargs)
 
@@ -134,6 +175,39 @@ def register_failed_login(key):
 def clear_login_attempts(key):
     login_attempts.pop(key, None)
     locked_until.pop(key, None)
+
+
+def is_contract_active():
+    return date.today() <= contract_valid_until
+
+
+def pdf_response(filename, items):
+    output = BytesIO()
+    pdf = canvas.Canvas(output, pagesize=A4)
+    _, page_height = A4
+    y = page_height - 64
+    pdf.setTitle("Documentos Electromatic")
+    pdf.setFont("Helvetica-Bold", 17)
+    pdf.drawString(48, y, "Electromatic | Area de cliente")
+    y -= 34
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(48, y, f"Contrato valido ate: {CONTRACT_VALID_UNTIL}")
+    y -= 32
+
+    for item in items:
+        if y < 76:
+            pdf.showPage()
+            y = page_height - 64
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(48, y, item["title"])
+        y -= 18
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(48, y, f"{item['id']} | {item['category']} | {item['date']}")
+        y -= 26
+
+    pdf.save()
+    output.seek(0)
+    return send_file(output, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
 
 @app.after_request
@@ -197,6 +271,9 @@ def login_password():
         password_matches = check_password_hash(CLIENT_PASSWORD_HASH, password)
 
         if email_matches and password_matches:
+            if not is_contract_active():
+                flash("O acesso nao esta disponivel: o contrato indicado terminou.", "error")
+                return redirect(url_for("login"))
             session.clear()
             session["logged_in"] = True
             session.permanent = True
@@ -224,9 +301,10 @@ def dashboard():
         "dashboard.html",
         profile=client_profile,
         cards=summary_cards,
-        orders=orders,
-        invoices=invoices,
-        requests=requests_list,
+        equipment=equipment,
+        maintenance=maintenance,
+        guides=guides,
+        contract_valid_until=CONTRACT_VALID_UNTIL,
     )
 
 
@@ -246,6 +324,55 @@ def faturas():
 @login_required
 def pedidos():
     return render_template("list.html", title="Pedidos de suporte", items=requests_list)
+
+
+@app.route("/equipamentos")
+@login_required
+def equipamentos():
+    return render_template("equipment.html", equipment=equipment)
+
+
+@app.route("/manutencao")
+@login_required
+def manutencao():
+    return render_template("maintenance.html", maintenance=maintenance)
+
+
+@app.route("/documentos")
+@login_required
+def documentos():
+    return render_template("documents.html", documents=documents)
+
+
+@app.route("/documentos/<document_id>/pdf")
+@login_required
+def documento_pdf(document_id):
+    document = next((item for item in documents if item["id"] == document_id), None)
+    if not document:
+        abort(404)
+    return pdf_response(f"{document_id.lower()}.pdf", [document])
+
+
+@app.route("/documentos/bundle.pdf")
+@login_required
+def documentos_bundle_pdf():
+    return pdf_response("electromatic-documentos.pdf", documents)
+
+
+@app.route("/apoio", methods=["GET", "POST"])
+@login_required
+def apoio():
+    reply = None
+    if request.method == "POST":
+        verify_csrf()
+        message = request.form.get("message", "").strip().lower()
+        if any(term in message for term in ("avaria", "urgente", "piquete")):
+            reply = "Para uma avaria urgente, contacte a piquete atraves do gestor de contrato."
+        elif any(term in message for term in ("relatorio", "pdf", "checklist")):
+            reply = "Os relatorios e checklists estao disponiveis na area Documentos."
+        else:
+            reply = "Posso orientar sobre equipamentos, manutencao, documentos ou contacto com o gestor."
+    return render_template("support.html", profile=client_profile, guides=guides, reply=reply)
 
 
 @app.route("/perfil")

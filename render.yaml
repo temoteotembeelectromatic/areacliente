@@ -19,3 +19,5 @@ services:
         value: privacidade.teste@exemplo.pt
       - key: PRIVACY_UPDATED_AT
         value: 2026-08-17
+      - key: CONTRACT_VALID_UNTIL
+        value: 2026-12-31
