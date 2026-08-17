@@ -68,6 +68,7 @@ class LoginSecurityTests(unittest.TestCase):
         equipment_html = equipment_page.get_data(as_text=True)
         self.assertEqual(equipment_page.status_code, 200)
         self.assertIn("Apenas leitura", equipment_html)
+        self.assertIn("app.js", equipment_html)
         self.assertIn("Sistema UPS", equipment_html)
         self.assertEqual(equipment_html.count('class="equipment-card"'), 1)
 

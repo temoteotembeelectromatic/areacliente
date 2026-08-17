@@ -394,7 +394,7 @@ def set_security_headers(response):
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; style-src 'self'; img-src 'self' data:; "
-        "base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        "script-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     )
     if request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

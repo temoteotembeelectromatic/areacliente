@@ -23,6 +23,8 @@ EQUIPMENT_TEST_MODE=true
 
 Em modo de teste, todos os números de cliente existentes ficam disponíveis no seletor. Antes de produção, defina `EQUIPMENT_TEST_MODE=false` e configure `CLIENT_ALLOWED_NUMBERS=NUMERO_CLIENTE_1,NUMERO_CLIENTE_2` para limitar cada portal aos clientes autorizados. Use na base externa uma credencial PostgreSQL que também tenha apenas permissão `SELECT` sobre `registo_equipamentos`.
 
+No serviço Render já existente, estas variáveis têm de ser adicionadas manualmente em `Environment`; o `render.yaml` não altera automaticamente as variáveis de um serviço criado anteriormente.
+
 ## Arranque local
 
 ```bash
