@@ -52,25 +52,32 @@ a {
 }
 
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 8px;
+  color: #ffffff;
 }
 
-.brand-mark {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--brand);
-  color: #171717;
-  font-weight: 800;
+.brand-logo-surface {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .brand small,
 .nav a {
   color: #d2d2d2;
+}
+
+.brand small {
+  font-weight: 700;
 }
 
 .nav {
@@ -131,6 +138,7 @@ a {
 }
 
 .login-brand {
+  width: min(250px, 100%);
   margin-bottom: 54px;
 }
 

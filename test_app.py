@@ -32,6 +32,7 @@ class LoginSecurityTests(unittest.TestCase):
         first_page = self.client.get("/login")
         self.assertEqual(first_page.status_code, 200)
         self.assertIn("Passo 1 de 2", first_page.get_data(as_text=True))
+        self.assertIn("electromatic-logo.png", first_page.get_data(as_text=True))
         self.assertEqual(first_page.headers["X-Frame-Options"], "DENY")
         self.assertIn("default-src 'self'", first_page.headers["Content-Security-Policy"])
 

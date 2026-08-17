@@ -4,13 +4,12 @@
   <section class="login-page">
     <div class="login-panel">
       <div class="login-copy">
-        <div class="brand login-brand">
-          <span class="brand-mark">E</span>
-          <div>
-            <strong>Electromatic</strong>
-            <small>Área do cliente</small>
-          </div>
-        </div>
+        <a class="brand login-brand" href="{{ url_for('login') }}" aria-label="Electromatic - Área do cliente">
+          <span class="brand-logo-surface">
+            <img class="brand-logo" src="{{ url_for('static', filename='electromatic-logo.png') }}" alt="Electromatic">
+          </span>
+          <small>Área do cliente</small>
+        </a>
         <span class="eyebrow">Acesso protegido</span>
         <h1>Bem-vindo de volta.</h1>
         <p>Consulte os equipamentos abrangidos, manutenções, relatórios e apoio técnico do seu contrato.</p>

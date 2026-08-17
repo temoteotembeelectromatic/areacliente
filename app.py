@@ -8,6 +8,7 @@ from functools import wraps
 
 from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash
@@ -185,11 +186,14 @@ def pdf_response(filename, items):
     output = BytesIO()
     pdf = canvas.Canvas(output, pagesize=A4)
     _, page_height = A4
-    y = page_height - 64
+    y = page_height - 52
     pdf.setTitle("Documentos Electromatic")
-    pdf.setFont("Helvetica-Bold", 17)
-    pdf.drawString(48, y, "Electromatic | Área de cliente")
-    y -= 34
+    logo_path = os.path.join(app.root_path, "static", "electromatic-logo.png")
+    pdf.drawImage(ImageReader(logo_path), 48, y - 36, width=192, height=45, mask="auto")
+    y -= 54
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(48, y, "Área de cliente")
+    y -= 24
     pdf.setFont("Helvetica", 10)
     pdf.drawString(48, y, f"Contrato válido até: {CONTRACT_VALID_UNTIL}")
     y -= 32
