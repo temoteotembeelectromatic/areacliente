@@ -2,7 +2,6 @@
 
 {% block content %}
   <header class="equipment-page-header">
-    <div class="equipment-title-mark">E</div>
     <div>
       <span class="eyebrow">Contrato e ativos</span>
       <h1>Lista de equipamentos</h1>
@@ -52,12 +51,7 @@
   </form>
 
   <div id="equipment-results" aria-live="polite">
-  <div class="equipment-results-meta">
-    <strong>{{ equipment|length }} equipamento{% if equipment|length != 1 %}s{% endif %}</strong>
-    <span>{{ source_label }}</span>
-  </div>
-
-  {% if error %}
+    {% if error %}
     <section class="empty-state error-state">
       <h2>Consulta indisponível</h2>
       <p>{{ error }}</p>
@@ -99,15 +93,7 @@
       </table>
     </div>
   {% else %}
-    <section class="equipment-preview-strip" aria-label="Pré-visualização dos equipamentos">
-      {% for item in equipment[:4] %}
-        <article class="equipment-preview">
-          <div class="equipment-preview-image" aria-hidden="true"><span>{{ item.type[:1] }}</span></div>
-          <div><strong>{{ item.id }}</strong><small>{{ item.type }}</small></div>
-        </article>
-      {% endfor %}
-    </section>
-    <section class="equipment-grid">
+      <section class="equipment-grid">
       {% for item in equipment %}
         <article class="equipment-card">
           <div class="equipment-card-topline">
