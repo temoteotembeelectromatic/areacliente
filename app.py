@@ -388,7 +388,7 @@ def external_equipment_rows(filters):
             }
             for row in database_rows
         ]
-        equipment_ids = [row["_db_id"] for row in database_rows]
+        equipment_ids = [row["_db_id"] for row in rows]
         if equipment_ids:
             try:
                 cursor.execute(
