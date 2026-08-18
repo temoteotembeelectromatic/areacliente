@@ -341,8 +341,8 @@ def external_equipment_rows(filters):
         if filters["q"]:
             clauses.append(
                 """
-                (TRIM(COALESCE(numero_equipamento, '')) = %s
-                 OR TRIM(COALESCE(numero_contrato, '')) = %s)
+                (CAST(numero_equipamento AS TEXT) = %s
+                 OR CAST(numero_contrato AS TEXT) = %s)
                 """
             )
             params.extend([filters["q"], filters["q"]])
