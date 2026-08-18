@@ -260,7 +260,8 @@ def demo_equipment_rows(filters):
         rows = [
             row
             for row in rows
-            if query in " ".join(str(value or "") for value in row.values()).casefold()
+            if query == str(row["id"] or "").casefold()
+            or query == str(row["numero_contrato"] or "").casefold()
         ]
     types = sorted({row["type"] for row in equipment})
     clients = sorted({row["numero_cliente"] for row in equipment})
@@ -338,18 +339,13 @@ def external_equipment_rows(filters):
         elif filters["garantia"] == "0":
             clauses.append("(validade_garantia IS NULL OR validade_garantia < CURRENT_DATE)")
         if filters["q"]:
-            like_query = f"%{filters['q']}%"
             clauses.append(
                 """
-                (COALESCE(numero_equipamento, '') ILIKE %s
-                 OR COALESCE(numero_cliente, '') ILIKE %s
-                 OR COALESCE(numero_contrato, '') ILIKE %s
-                 OR COALESCE(tipo_equipamento, '') ILIKE %s
-                 OR COALESCE(marca, '') ILIKE %s
-                 OR COALESCE(modelo, '') ILIKE %s)
+                (TRIM(COALESCE(numero_equipamento, '')) = %s
+                 OR TRIM(COALESCE(numero_contrato, '')) = %s)
                 """
             )
-            params.extend([like_query] * 6)
+            params.extend([filters["q"], filters["q"]])
 
         cursor.execute(
             f"""
@@ -373,8 +369,10 @@ def external_equipment_rows(filters):
             """,
             params,
         )
+        database_rows = cursor.fetchall()
         rows = [
             {
+                "_db_id": row["id"],
                 "id": row["numero_equipamento"],
                 "numero_cliente": row["numero_cliente"],
                 "numero_contrato": row["numero_contrato"],
@@ -388,8 +386,31 @@ def external_equipment_rows(filters):
                 "in_warranty": bool(row["em_garantia"]),
                 "installed_at": row["data_instalacao"],
             }
-            for row in cursor.fetchall()
+            for row in database_rows
         ]
+        equipment_ids = [row["_db_id"] for row in database_rows]
+        if equipment_ids:
+            cursor.execute(
+                """
+                SELECT equipamento_id, file_url, original_filename
+                FROM registo_equipamentos_anexos
+                WHERE equipamento_id = ANY(%s)
+                ORDER BY created_at DESC, id DESC
+                """,
+                (equipment_ids,),
+            )
+            photos_by_equipment = {}
+            for photo in cursor.fetchall():
+                photos_by_equipment.setdefault(photo["equipamento_id"], []).append(
+                    {
+                        "file_url": photo["file_url"],
+                        "file_name": photo["original_filename"] or "Fotografia",
+                    }
+                )
+            for row in rows:
+                row["photos"] = photos_by_equipment.get(row["_db_id"], [])
+        for row in rows:
+            row.pop("_db_id", None)
         return rows, types, client_numbers, None, source_label
     except psycopg2.Error:
         app.logger.exception("Falha ao consultar DATABASE_URL_2")

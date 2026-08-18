@@ -102,6 +102,15 @@
           </div>
           <h2>{{ item.name }}</h2>
           <p>{{ item.brand }} · {{ item.model }}</p>
+          {% if item.photos %}
+            <div class="equipment-photos" aria-label="Fotografias do equipamento">
+              {% for photo in item.photos %}
+                <a href="{{ photo.file_url }}" target="_blank" rel="noopener">
+                  <img src="{{ photo.file_url }}" alt="{{ photo.file_name }}" loading="lazy">
+                </a>
+              {% endfor %}
+            </div>
+          {% endif %}
           <dl class="equipment-details">
             <div><dt>Cliente</dt><dd>{{ item.numero_cliente }}</dd></div>
             <div><dt>Contrato</dt><dd>{{ item.numero_contrato }}</dd></div>

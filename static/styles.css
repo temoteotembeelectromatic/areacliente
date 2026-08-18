@@ -629,6 +629,28 @@ select:focus {
   margin-bottom: 0;
 }
 
+.equipment-photos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.equipment-photos a {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-strong);
+}
+
+.equipment-photos img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .equipment-id {
   color: #9a4c00;
   font-size: 0.78rem;

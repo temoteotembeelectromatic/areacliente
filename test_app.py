@@ -68,7 +68,7 @@ class LoginSecurityTests(unittest.TestCase):
         documents = self.client.get("/documentos")
         self.assertIn("Descarregar PDF conjunto", documents.get_data(as_text=True))
 
-        equipment_page = self.client.get("/equipamentos?q=UPS")
+        equipment_page = self.client.get("/equipamentos?q=EQ-003")
         equipment_html = equipment_page.get_data(as_text=True)
         self.assertEqual(equipment_page.status_code, 200)
         self.assertIn("Apenas leitura", equipment_html)
