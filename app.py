@@ -390,29 +390,35 @@ def external_equipment_rows(filters):
         ]
         equipment_ids = [row["_db_id"] for row in database_rows]
         if equipment_ids:
-            cursor.execute(
-                """
-                SELECT equipamento_id, file_url, original_filename
-                FROM registo_equipamentos_anexos
-                WHERE equipamento_id = ANY(%s)
-                ORDER BY created_at DESC, id DESC
-                """,
-                (equipment_ids,),
-            )
-            photos_by_equipment = {}
-            for photo in cursor.fetchall():
-                photos_by_equipment.setdefault(photo["equipamento_id"], []).append(
-                    {
-                        "file_url": photo["file_url"],
-                        "file_name": photo["original_filename"] or "Fotografia",
-                    }
+            try:
+                cursor.execute(
+                    """
+                    SELECT equipamento_id, file_url, original_filename
+                    FROM registo_equipamentos_anexos
+                    WHERE equipamento_id = ANY(%s)
+                    ORDER BY created_at DESC, id DESC
+                    """,
+                    (equipment_ids,),
                 )
-            for row in rows:
-                row["photos"] = photos_by_equipment.get(row["_db_id"], [])
+                photos_by_equipment = {}
+                for photo in cursor.fetchall():
+                    photos_by_equipment.setdefault(photo["equipamento_id"], []).append(
+                        {
+                            "file_url": photo["file_url"],
+                            "file_name": photo["original_filename"] or "Fotografia",
+                        }
+                    )
+                for row in rows:
+                    row["photos"] = photos_by_equipment.get(row["_db_id"], [])
+            except psycopg2.Error:
+                app.logger.exception("Falha ao consultar fotografias dos equipamentos")
+                connection.rollback()
+                for row in rows:
+                    row["photos"] = []
         for row in rows:
             row.pop("_db_id", None)
         return rows, types, client_numbers, None, source_label
-    except psycopg2.Error:
+    except Exception:
         app.logger.exception("Falha ao consultar DATABASE_URL_2")
         return [], [], [], "Não foi possível consultar os equipamentos neste momento.", "Base de dados externa"
     finally:
@@ -428,7 +434,7 @@ def set_security_headers(response):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; style-src 'self'; img-src 'self' data:; "
+        "default-src 'self'; style-src 'self'; img-src 'self' https: data:; "
         "script-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     )
     if request.is_secure:
