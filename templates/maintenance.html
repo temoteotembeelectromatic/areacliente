@@ -3,24 +3,59 @@
 {% block content %}
   <header class="page-header">
     <div>
-      <span class="eyebrow">Intervencoes</span>
+      <span class="eyebrow">Intervenções</span>
       <h1>Manutenção</h1>
-      <p>Histórico de manutenção preventiva, corretiva e respetivos documentos.</p>
+      <p>Consulte o histórico de intervenções do equipamento seleccionado.</p>
     </div>
   </header>
-  <section class="panel">
-    {% for item in maintenance %}
-      <div class="row-item wide">
-        <div>
-          <strong>{{ item.title }}</strong>
-          <span>{{ item.id }} · {{ item.equipment }} · {{ item.type }}</span>
-        </div>
-        <div class="row-meta">
-          <small>{{ item.date }}</small>
-          <span class="status {{ 'status-watch' if item.status == 'Em acompanhamento' else 'status-good' }}">{{ item.status }}</span>
-          <a href="{{ url_for('documento_pdf', document_id=item.document_id) }}">PDF</a>
-        </div>
+
+  <form class="equipment-filters maintenance-filters" method="get" data-loading-form data-loading-text="A carregar...">
+    <label>
+      Equipamento
+      <select name="equipamento" required>
+        <option value="">Seleccione um equipamento</option>
+        {% for number in equipment_numbers %}
+          <option value="{{ number }}" {% if selected_equipment == number %}selected{% endif %}>{{ number }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="filter-submit" type="submit">Consultar histórico</button>
+  </form>
+
+  {% if error %}
+    <section class="empty-state error-state">
+      <h2>Consulta indisponível</h2>
+      <p>{{ error }}</p>
+    </section>
+  {% elif not selected_equipment %}
+    <section class="empty-state">
+      <h2>Seleccione um equipamento</h2>
+      <p>O histórico de intervenções aparecerá depois de escolher um equipamento.</p>
+    </section>
+  {% elif not maintenance %}
+    <section class="empty-state">
+      <h2>Sem intervenções registadas</h2>
+      <p>Não existem intervenções associadas a este equipamento.</p>
+    </section>
+  {% else %}
+    <section class="panel">
+      <div class="equipment-results-meta">
+        <strong>{{ maintenance|length }} intervenção{% if maintenance|length != 1 %}s{% endif %}</strong>
+        <span>Equipamento {{ selected_equipment }}</span>
       </div>
-    {% endfor %}
-  </section>
+      {% for item in maintenance %}
+        <article class="row-item wide maintenance-item">
+          <div>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.id }} · Contrato {{ item.contract }} · {{ item.location }}</span>
+          </div>
+          <div class="row-meta">
+            <small>{{ item.date }}</small>
+            <span class="status {{ 'status-watch' if item.status not in ['Concluída', 'ConcluÃ­da', 'Concluida'] else 'status-good' }}">{{ item.status }}</span>
+            <small>{{ item.technician }}</small>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
 {% endblock %}

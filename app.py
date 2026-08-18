@@ -427,6 +427,107 @@ def external_equipment_rows(filters):
             connection.close()
 
 
+def external_maintenance_history(selected_equipment):
+    if not DATABASE_URL_2:
+        equipment_numbers = sorted(row["id"] for row in equipment)
+        rows = [
+            {
+                "id": item["id"],
+                "title": item["title"],
+                "date": item["date"],
+                "contract": "-",
+                "equipment": item["equipment"],
+                "location": "-",
+                "status": item["status"],
+                "technician": "-",
+            }
+            for item in maintenance
+            if item["equipment"] == selected_equipment
+        ] if selected_equipment else []
+        return equipment_numbers, rows
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+
+        scope_clause = ""
+        scope_params = []
+        if CLIENT_ALLOWED_NUMBERS:
+            scope_clause = "WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"
+            scope_params.append(CLIENT_ALLOWED_NUMBERS)
+
+        cursor.execute(
+            f"""
+            SELECT DISTINCT TRIM(COALESCE(numero_equipamento, '')) AS numero_equipamento
+            FROM registo_equipamentos
+            {scope_clause}
+              AND TRIM(COALESCE(numero_equipamento, '')) <> ''
+            ORDER BY numero_equipamento
+            LIMIT 500
+            """ if scope_clause else """
+            SELECT DISTINCT TRIM(COALESCE(numero_equipamento, '')) AS numero_equipamento
+            FROM registo_equipamentos
+            WHERE TRIM(COALESCE(numero_equipamento, '')) <> ''
+            ORDER BY numero_equipamento
+            LIMIT 500
+            """,
+            scope_params,
+        )
+        equipment_numbers = [row["numero_equipamento"] for row in cursor.fetchall()]
+        if not selected_equipment:
+            return equipment_numbers, None
+        if selected_equipment not in equipment_numbers:
+            return equipment_numbers, "O equipamento seleccionado não está disponível para esta conta."
+
+        cursor.execute(
+            """
+            SELECT
+                id,
+                tipo_checklist,
+                data_checklist,
+                numero_contrato,
+                numero_equipamento,
+                posicao,
+                estado,
+                tecnicos,
+                criado_por_nome,
+                created_at
+            FROM checklists_manutencao
+            WHERE TRIM(COALESCE(numero_equipamento, '')) = %s
+            ORDER BY data_checklist DESC NULLS LAST, created_at DESC NULLS LAST, id DESC
+            LIMIT 100
+            """,
+            (selected_equipment,),
+        )
+        rows = [
+            {
+                "id": row["id"],
+                "title": row["tipo_checklist"] or "Intervenção",
+                "date": row["data_checklist"] or row["created_at"],
+                "contract": row["numero_contrato"] or "-",
+                "equipment": row["numero_equipamento"] or selected_equipment,
+                "location": row["posicao"] or "-",
+                "status": row["estado"] or "-",
+                "technician": row["tecnicos"] or row["criado_por_nome"] or "-",
+            }
+            for row in cursor.fetchall()
+        ]
+        return equipment_numbers, rows
+    except Exception:
+        app.logger.exception("Falha ao consultar histórico de manutenção")
+        return [], "Não foi possível consultar o histórico de manutenção neste momento."
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+
+
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -562,7 +663,17 @@ def equipamentos():
 @app.route("/manutencao")
 @login_required
 def manutencao():
-    return render_template("maintenance.html", maintenance=maintenance)
+    selected_equipment = request.args.get("equipamento", "").strip()[:100]
+    equipment_numbers, history = external_maintenance_history(selected_equipment)
+    error = history if isinstance(history, str) else None
+    rows = [] if error else (history or [])
+    return render_template(
+        "maintenance.html",
+        maintenance=rows,
+        equipment_numbers=equipment_numbers,
+        selected_equipment=selected_equipment,
+        error=error,
+    )
 
 
 @app.route("/documentos")

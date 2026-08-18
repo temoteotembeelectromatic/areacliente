@@ -68,6 +68,14 @@ class LoginSecurityTests(unittest.TestCase):
         documents = self.client.get("/documentos")
         self.assertIn("Descarregar PDF conjunto", documents.get_data(as_text=True))
 
+        maintenance_page = self.client.get("/manutencao")
+        self.assertEqual(maintenance_page.status_code, 200)
+        self.assertIn("Seleccione um equipamento", maintenance_page.get_data(as_text=True))
+
+        maintenance_history = self.client.get("/manutencao?equipamento=EQ-003")
+        self.assertEqual(maintenance_history.status_code, 200)
+        self.assertIn("Ocorr", maintenance_history.get_data(as_text=True))
+
         equipment_page = self.client.get("/equipamentos?q=EQ-003")
         equipment_html = equipment_page.get_data(as_text=True)
         self.assertEqual(equipment_page.status_code, 200)
