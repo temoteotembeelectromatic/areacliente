@@ -240,6 +240,10 @@ def get_equipment_filters():
     }
 
 
+def has_equipment_selection(filters):
+    return any(filters[key] for key in ("q", "cliente", "tipo", "garantia"))
+
+
 def demo_equipment_rows(filters):
     rows = list(equipment)
     selected_client = filters["cliente"] if filters["cliente"] in CLIENT_ALLOWED_NUMBERS else ""
@@ -260,6 +264,8 @@ def demo_equipment_rows(filters):
         ]
     types = sorted({row["type"] for row in equipment})
     clients = sorted({row["numero_cliente"] for row in equipment})
+    if not has_equipment_selection(filters):
+        rows = []
     return rows, types, clients, None, "Dados de demonstração"
 
 
@@ -307,6 +313,10 @@ def external_equipment_rows(filters):
             scope_params,
         )
         types = [row["tipo"] for row in cursor.fetchall()]
+
+        source_label = "Base de dados externa · Teste · Apenas leitura" if EQUIPMENT_TEST_MODE else "Base de dados externa · Apenas leitura"
+        if not has_equipment_selection(filters):
+            return [], types, client_numbers, None, source_label
 
         selected_client = filters["cliente"]
         if selected_client and selected_client not in client_numbers:
@@ -380,7 +390,6 @@ def external_equipment_rows(filters):
             }
             for row in cursor.fetchall()
         ]
-        source_label = "Base de dados externa · Teste · Apenas leitura" if EQUIPMENT_TEST_MODE else "Base de dados externa · Apenas leitura"
         return rows, types, client_numbers, None, source_label
     except psycopg2.Error:
         app.logger.exception("Falha ao consultar DATABASE_URL_2")

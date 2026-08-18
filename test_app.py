@@ -61,6 +61,10 @@ class LoginSecurityTests(unittest.TestCase):
         dashboard = self.client.get("/dashboard")
         self.assertEqual(dashboard.headers["Cache-Control"], "no-store, max-age=0")
 
+        empty_equipment = self.client.get("/equipamentos")
+        self.assertEqual(empty_equipment.status_code, 200)
+        self.assertNotIn('class="equipment-card"', empty_equipment.get_data(as_text=True))
+
         documents = self.client.get("/documentos")
         self.assertIn("Descarregar PDF conjunto", documents.get_data(as_text=True))
 
