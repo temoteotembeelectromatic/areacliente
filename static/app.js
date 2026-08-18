@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-loading-form]").forEach((form) => {
     let liveTimer;
-    let liveRequest;
+    let liveController;
 
     const updateResults = () => {
       const results = document.querySelector("#equipment-results");
@@ -12,11 +12,12 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.textContent = form.dataset.loadingText || "A carregar...";
       }
       form.setAttribute("aria-busy", "true");
-      if (liveRequest) liveRequest.abort();
+      if (liveController) liveController.abort();
       const params = new URLSearchParams(new FormData(form));
       const url = `${form.action || window.location.pathname}?${params.toString()}`;
-      liveRequest = fetch(url, { headers: { "X-Requested-With": "equipment-search" } });
-      liveRequest.then((response) => response.text()).then((html) => {
+      const controller = new AbortController();
+      liveController = controller;
+      fetch(url, { headers: { "X-Requested-With": "equipment-search" }, signal: controller.signal }).then((response) => response.text()).then((html) => {
         const page = new DOMParser().parseFromString(html, "text/html");
         const nextResults = page.querySelector("#equipment-results");
         if (nextResults) {
@@ -29,10 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
           if (status) status.textContent = "Não foi possível actualizar.";
         }
       }).finally(() => {
-        form.removeAttribute("aria-busy");
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = "Procurar";
+        if (liveController === controller) {
+          liveController = null;
+          form.removeAttribute("aria-busy");
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = "Procurar";
+          }
         }
       });
     };
