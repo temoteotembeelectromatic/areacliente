@@ -410,7 +410,7 @@ def external_equipment_rows(filters):
                     )
                 for row in rows:
                     row["photos"] = photos_by_equipment.get(row["_db_id"], [])
-            except psycopg2.Error:
+            except Exception:
                 app.logger.exception("Falha ao consultar fotografias dos equipamentos")
                 connection.rollback()
                 for row in rows:
