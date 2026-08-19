@@ -443,6 +443,7 @@ def external_maintenance_history(selected_equipment):
             }
             for item in maintenance
             if item["equipment"] == selected_equipment
+            and item["status"].casefold() not in {"serviço delegado", "servico delegado"}
         ] if selected_equipment else []
         return equipment_numbers, rows
 
@@ -500,6 +501,7 @@ def external_maintenance_history(selected_equipment):
                 created_at
             FROM checklists_manutencao
             WHERE TRIM(COALESCE(numero_equipamento, '')) = %s
+              AND LOWER(TRIM(COALESCE(estado, ''))) NOT IN ('serviço delegado', 'servico delegado')
             ORDER BY data_checklist DESC NULLS LAST, created_at DESC NULLS LAST, id DESC
             LIMIT 100
             """,
@@ -536,9 +538,12 @@ def external_maintenance_history(selected_equipment):
                     equipamento_2_id,
                     equipamento_3_id
                 FROM sharepoint_intervencoes
-                WHERE TRIM(COALESCE(equipamento_1_id, '')) = %s
-                   OR TRIM(COALESCE(equipamento_2_id, '')) = %s
-                   OR TRIM(COALESCE(equipamento_3_id, '')) = %s
+                WHERE (
+                    TRIM(COALESCE(equipamento_1_id, '')) = %s
+                    OR TRIM(COALESCE(equipamento_2_id, '')) = %s
+                    OR TRIM(COALESCE(equipamento_3_id, '')) = %s
+                )
+                  AND LOWER(TRIM(COALESCE(estado_servico, ''))) NOT IN ('serviço delegado', 'servico delegado')
                 ORDER BY data_fim DESC NULLS LAST, data_inicio DESC NULLS LAST, id DESC
                 LIMIT 100
                 """,
