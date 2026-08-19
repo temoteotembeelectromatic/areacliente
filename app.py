@@ -528,6 +528,18 @@ def external_maintenance_history(selected_equipment):
             connection.close()
 
 
+def intervention_type_label(value):
+    text = str(value or "").strip()
+    normalized = text.casefold()
+    if "prevent" in normalized:
+        return "Manutenção preventiva"
+    if "corret" in normalized or "correc" in normalized:
+        return "Manutenção correctiva"
+    if "instal" in normalized or "obra" in normalized:
+        return "Instalação"
+    return text if text and "_" not in text else "Intervenção"
+
+
 def maintenance_detail(intervention_id):
     if not DATABASE_URL_2:
         return next((item for item in maintenance if item["id"] == intervention_id), None)
@@ -563,7 +575,7 @@ def maintenance_detail(intervention_id):
         detail = cursor.fetchone()
         if not detail:
             return None
-        detail["intervention_type"] = detail.get("tipo_checklist") or "-"
+        detail["intervention_type"] = intervention_type_label(detail.get("tipo_checklist"))
         detail["work_done"] = ""
         try:
             cursor.execute(
@@ -577,7 +589,8 @@ def maintenance_detail(intervention_id):
             )
             service = cursor.fetchone()
             if service:
-                detail["intervention_type"] = service["tipo_servico"] or detail["intervention_type"]
+                if service["tipo_servico"]:
+                    detail["intervention_type"] = intervention_type_label(service["tipo_servico"])
                 detail["work_done"] = service["trabalhos_realizados"] or service["observacoes_internas"] or ""
         except Exception:
             app.logger.exception("Falha ao consultar contexto da intervenção")
