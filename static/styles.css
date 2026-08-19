@@ -802,6 +802,41 @@ select:focus {
   font-size: 1.1rem;
 }
 
+.checklist-results {
+  display: grid;
+  gap: 14px;
+}
+
+.checklist-results h2 {
+  font-size: 1.1rem;
+}
+
+.checklist-section {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.checklist-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.checklist-answer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+}
+
+.checklist-answer span {
+  color: var(--muted);
+  font-weight: 700;
+  text-align: right;
+}
+
 .equipment-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);

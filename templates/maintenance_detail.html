@@ -35,6 +35,22 @@
         {% if detail.detalhes %}<div><dt>Detalhes</dt><p>{{ detail.detalhes }}</p></div>{% endif %}
       </div>
     {% endif %}
+    {% if detail.respostas and detail.respostas.secoes %}
+      <div class="checklist-results">
+        <h2>Resultados da checklist</h2>
+        {% for section in detail.respostas.secoes %}
+          <section class="checklist-section">
+            <h3>{{ section.titulo or 'Checklist' }}</h3>
+            {% for question in section.perguntas or [] %}
+              <div class="checklist-answer">
+                <strong>{{ question.pergunta or question.codigo }}</strong>
+                <span>{{ question.resposta or '-' }}</span>
+              </div>
+            {% endfor %}
+          </section>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% if detail.photos %}
       <div class="detail-photos">
         <h2>Fotografias e anexos</h2>
