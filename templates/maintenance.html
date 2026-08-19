@@ -47,7 +47,8 @@
         <article class="row-item wide maintenance-item">
           <div>
             <strong>{{ item.title }}</strong>
-            <span>{{ item.id }} · Contrato {{ item.contract }} · {{ item.location }}</span>
+            <span>{{ item.id }} · {{ item.intervention_type or 'Intervenção' }} · Contrato {{ item.contract }} · {{ item.location }}</span>
+            {% if item.work_done %}<p>{{ item.work_done }}</p>{% endif %}
           </div>
           <div class="row-meta">
             <small>{{ item.date }}</small>

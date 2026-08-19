@@ -515,9 +515,53 @@ def external_maintenance_history(selected_equipment):
                 "location": row["posicao"] or "-",
                 "status": row["estado"] or "-",
                 "technician": row["tecnicos"] or row["criado_por_nome"] or "-",
+                "intervention_type": intervention_type_label(row["tipo_checklist"]),
+                "work_done": (row.get("respostas") or {}).get("trabalhos_realizados", "") if isinstance(row.get("respostas"), dict) else "",
             }
             for row in cursor.fetchall()
         ]
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    tipo_servico,
+                    titulo,
+                    trabalhos_realizados,
+                    estado_servico,
+                    data_inicio,
+                    data_fim,
+                    numero_servico,
+                    equipamento_1_id,
+                    equipamento_2_id,
+                    equipamento_3_id
+                FROM sharepoint_intervencoes
+                WHERE TRIM(COALESCE(equipamento_1_id, '')) = %s
+                   OR TRIM(COALESCE(equipamento_2_id, '')) = %s
+                   OR TRIM(COALESCE(equipamento_3_id, '')) = %s
+                ORDER BY data_fim DESC NULLS LAST, data_inicio DESC NULLS LAST, id DESC
+                LIMIT 100
+                """,
+                (selected_equipment, selected_equipment, selected_equipment),
+            )
+            for report in cursor.fetchall():
+                rows.append(
+                    {
+                        "id": report["id"],
+                        "title": report["titulo"] or report["trabalhos_realizados"] or "Relatório de intervenção",
+                        "date": report["data_fim"] or report["data_inicio"] or "-",
+                        "contract": report["numero_servico"] or "-",
+                        "equipment": selected_equipment,
+                        "location": "-",
+                        "status": report["estado_servico"] or "-",
+                        "technician": "-",
+                        "intervention_type": intervention_type_label(report["tipo_servico"]),
+                        "work_done": report["trabalhos_realizados"] or "",
+                    }
+                )
+        except Exception:
+            app.logger.exception("Falha ao consultar relatórios de intervenção")
+            connection.rollback()
         return equipment_numbers, rows
     except Exception:
         app.logger.exception("Falha ao consultar histórico de manutenção")
@@ -574,7 +618,50 @@ def maintenance_detail(intervention_id):
         )
         detail = cursor.fetchone()
         if not detail:
-            return None
+            cursor.execute(
+                f"""
+                SELECT s.*, e.tipo_equipamento, e.marca, e.modelo, e.numero_cliente
+                FROM sharepoint_intervencoes s
+                LEFT JOIN registo_equipamentos e ON
+                    TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_1_id, ''))
+                    OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_2_id, ''))
+                    OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_3_id, ''))
+                WHERE s.id = %s {scope_clause}
+                ORDER BY e.id DESC NULLS LAST
+                LIMIT 1
+                """,
+                params,
+            )
+            detail = cursor.fetchone()
+            if not detail:
+                return None
+            detail["numero_equipamento"] = (
+                detail.get("equipamento_1_id")
+                or detail.get("equipamento_2_id")
+                or detail.get("equipamento_3_id")
+                or "-"
+            )
+            detail["numero_contrato"] = detail.get("numero_servico") or "-"
+            detail["intervention_type"] = intervention_type_label(detail.get("tipo_servico"))
+            detail["work_done"] = detail.get("trabalhos_realizados") or detail.get("observacoes_internas") or ""
+            try:
+                cursor.execute(
+                    """
+                    SELECT file_url, original_filename
+                    FROM ri_anexos
+                    WHERE ri_id = %s
+                    ORDER BY id
+                    """,
+                    (int(intervention_id),),
+                )
+                detail["photos"] = [
+                    {"file_url": row["file_url"], "file_name": row["original_filename"] or "Anexo"}
+                    for row in cursor.fetchall()
+                ]
+            except Exception:
+                connection.rollback()
+                detail["photos"] = []
+            return detail
         detail["intervention_type"] = intervention_type_label(detail.get("tipo_checklist"))
         detail["work_done"] = ""
         try:
