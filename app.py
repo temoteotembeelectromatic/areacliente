@@ -644,6 +644,17 @@ def maintenance_detail(intervention_id):
             detail["numero_contrato"] = detail.get("numero_servico") or "-"
             detail["intervention_type"] = intervention_type_label(detail.get("tipo_servico"))
             detail["work_done"] = detail.get("trabalhos_realizados") or detail.get("observacoes_internas") or ""
+            detail["title"] = detail.get("titulo") or detail["work_done"] or "Detalhe da intervenção"
+            payload = detail.get("raw_payload") if isinstance(detail.get("raw_payload"), dict) else {}
+            detail["numero_cliente"] = detail.get("cliente") or payload.get("cliente") or detail.get("nif") or "-"
+            detail["data_checklist"] = detail.get("data_fim") or detail.get("data_inicio") or payload.get("data_fim") or payload.get("data_inicio")
+            detail["estado"] = detail.get("estado_servico") or payload.get("estado_servico") or "-"
+            detail["posicao"] = detail.get("posicao") or payload.get("posicao") or payload.get("localizacao") or "-"
+            detail["tecnicos"] = detail.get("tecnicos") or payload.get("tecnicos") or "-"
+            detail["tipo_equipamento"] = detail.get("equipamento_1_tipo") or payload.get("equipamento_1_tipo") or "-"
+            detail["marca"] = detail.get("equipamento_1_marca") or payload.get("equipamento_1_marca") or "-"
+            detail["modelo"] = detail.get("equipamento_1_modelo") or payload.get("equipamento_1_modelo") or "-"
+            detail["comentarios"] = detail.get("observacoes_internas") or payload.get("observacoes_internas") or ""
             try:
                 cursor.execute(
                     """
