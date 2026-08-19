@@ -20,7 +20,13 @@
           <nav class="nav">
             <a href="{{ url_for('dashboard') }}">Painel</a>
             <a href="{{ url_for('equipamentos') }}">Equipamentos</a>
-            <a href="{{ url_for('manutencao') }}">Manutenção</a>
+            <details class="nav-group" {% if request.path.startswith('/manutencao') or request.path.startswith('/checklists') %}open{% endif %}>
+              <summary>Manutenção</summary>
+              <div class="nav-submenu">
+                <a href="{{ url_for('manutencao') }}">Histórico por equipamento</a>
+                <a href="{{ url_for('checklists') }}">Checklists</a>
+              </div>
+            </details>
             <a href="{{ url_for('documentos') }}">Documentos</a>
             <a href="{{ url_for('apoio') }}">Apoio</a>
             <a href="{{ url_for('perfil') }}">Perfil</a>

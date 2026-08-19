@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Manutenção</span>
+      <h1>Extrair checklists validadas</h1>
+      <p>Pesquisar checklists validadas por contrato e período.</p>
+    </div>
+  </header>
+
+  <form class="equipment-filters checklist-filters" method="get" data-loading-form data-loading-text="A carregar...">
+    <label>N.º de contrato
+      <input name="contrato" value="{{ contract }}" placeholder="Ex.: 774" required>
+    </label>
+    <label>Data inicial
+      <input type="date" name="data_inicio" value="{{ start_date }}" required>
+    </label>
+    <label>Data final
+      <input type="date" name="data_fim" value="{{ end_date }}" required>
+    </label>
+    <button class="filter-submit" type="submit">Procurar</button>
+  </form>
+
+  {% if error %}
+    <section class="empty-state error-state"><h2>Consulta indisponível</h2><p>{{ error }}</p></section>
+  {% elif not searched %}
+    <section class="empty-state"><p>Indique um contrato e um intervalo de datas para pesquisar checklists validadas.</p></section>
+  {% elif not checklists %}
+    <section class="empty-state"><h2>Sem resultados</h2><p>Não foram encontradas checklists validadas para os critérios indicados.</p></section>
+  {% else %}
+    <section class="panel">
+      <div class="equipment-results-meta"><strong>{{ checklists|length }} checklist{% if checklists|length != 1 %}s{% endif %}</strong><span>Validadas</span></div>
+      {% for item in checklists %}
+        <article class="row-item wide">
+          <div>
+            <strong>{{ item.tipo_checklist or 'Checklist' }}</strong>
+            <span>{{ item.numero_equipamento }} · Contrato {{ item.numero_contrato }} · {{ item.posicao or '-' }}</span>
+          </div>
+          <div class="row-meta"><small>{{ item.data_checklist }}</small><span class="status status-good">{{ item.estado }}</span><a href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhes</a></div>
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
+{% endblock %}

@@ -723,6 +723,57 @@ def maintenance_detail(intervention_id):
             connection.close()
 
 
+def validated_checklists(contract, start_date, end_date):
+    if not DATABASE_URL_2 or not contract or not start_date or not end_date:
+        return [], None
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        params = [contract, start_date, end_date]
+        scope_clause = ""
+        if CLIENT_ALLOWED_NUMBERS:
+            scope_clause = """
+              AND EXISTS (
+                SELECT 1 FROM registo_equipamentos e
+                WHERE TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(c.numero_equipamento, ''))
+                  AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)
+              )
+            """
+            params.append(CLIENT_ALLOWED_NUMBERS)
+        cursor.execute(
+            f"""
+            SELECT c.id, c.tipo_checklist, c.data_checklist, c.numero_contrato,
+                   c.numero_equipamento, c.posicao, c.estado, c.tecnicos, c.criado_por_nome
+            FROM checklists_manutencao c
+            WHERE TRIM(COALESCE(c.numero_contrato, '')) = %s
+              AND c.data_checklist >= %s::date
+              AND c.data_checklist <= %s::date
+              AND LOWER(TRIM(COALESCE(c.estado, ''))) IN (
+                'validado', 'serviço validado', 'servico validado',
+                'serviço feito e validado', 'servico feito e validado'
+              )
+              {scope_clause}
+            ORDER BY c.data_checklist DESC NULLS LAST, c.id DESC
+            LIMIT 100
+            """,
+            params,
+        )
+        return cursor.fetchall(), None
+    except Exception:
+        app.logger.exception("Falha ao consultar checklists validadas")
+        return [], "Não foi possível consultar as checklists neste momento."
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+
+
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -878,6 +929,24 @@ def manutencao_detalhe(intervention_id):
     if not detail:
         abort(404)
     return render_template("maintenance_detail.html", detail=detail)
+
+
+@app.route("/checklists")
+@login_required
+def checklists():
+    contract = request.args.get("contrato", "").strip()[:100]
+    start_date = request.args.get("data_inicio", "").strip()[:10]
+    end_date = request.args.get("data_fim", "").strip()[:10]
+    rows, error = validated_checklists(contract, start_date, end_date)
+    return render_template(
+        "checklists.html",
+        checklists=rows,
+        contract=contract,
+        start_date=start_date,
+        end_date=end_date,
+        error=error,
+        searched=bool(contract or start_date or end_date),
+    )
 
 
 @app.route("/documentos")

@@ -100,6 +100,46 @@ a {
   color: #ffffff;
 }
 
+.nav-group summary {
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: #d2d2d2;
+  cursor: pointer;
+  list-style: none;
+}
+
+.nav-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-group summary::after {
+  float: right;
+  content: "+";
+  color: var(--brand);
+}
+
+.nav-group[open] summary::after {
+  content: "-";
+}
+
+.nav-group summary:hover,
+.nav-group[open] summary {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.nav-submenu {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 4px 12px;
+  border-left: 2px solid var(--brand);
+}
+
+.nav-submenu a {
+  padding: 9px 12px;
+  font-size: 0.86rem;
+}
+
 .ghost-button {
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -513,6 +553,22 @@ select:focus {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.checklist-filters {
+  grid-template-columns: 1.2fr 1fr 1fr auto;
+  align-items: end;
+}
+
+.checklist-filters label {
+  display: grid;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.checklist-filters input {
+  min-height: 46px;
 }
 
 .search-field input {
@@ -935,6 +991,10 @@ textarea:focus {
   }
 
   .filter-selects {
+    grid-template-columns: 1fr;
+  }
+
+  .checklist-filters {
     grid-template-columns: 1fr;
   }
 
