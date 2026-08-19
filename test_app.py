@@ -76,6 +76,10 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertEqual(maintenance_history.status_code, 200)
         self.assertIn("Ocorr", maintenance_history.get_data(as_text=True))
 
+        intervention_detail = self.client.get("/manutencao/MC-2026-007")
+        self.assertEqual(intervention_detail.status_code, 200)
+        self.assertIn("Detalhe da intervenção", intervention_detail.get_data(as_text=True))
+
         equipment_page = self.client.get("/equipamentos?q=EQ-003")
         equipment_html = equipment_page.get_data(as_text=True)
         self.assertEqual(equipment_page.status_code, 200)

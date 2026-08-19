@@ -528,6 +528,64 @@ def external_maintenance_history(selected_equipment):
             connection.close()
 
 
+def maintenance_detail(intervention_id):
+    if not DATABASE_URL_2:
+        return next((item for item in maintenance if item["id"] == intervention_id), None)
+    if not str(intervention_id).isdigit():
+        return None
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        scope_clause = ""
+        params = [int(intervention_id)]
+        if CLIENT_ALLOWED_NUMBERS:
+            scope_clause = "AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)"
+            params.append(CLIENT_ALLOWED_NUMBERS)
+        cursor.execute(
+            f"""
+            SELECT c.*, e.tipo_equipamento, e.marca, e.modelo, e.numero_cliente
+            FROM checklists_manutencao c
+            LEFT JOIN registo_equipamentos e
+              ON TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(c.numero_equipamento, ''))
+            WHERE c.id = %s {scope_clause}
+            ORDER BY e.id DESC NULLS LAST
+            LIMIT 1
+            """,
+            params,
+        )
+        detail = cursor.fetchone()
+        if not detail:
+            return None
+        cursor.execute(
+            """
+            SELECT file_url, original_filename
+            FROM checklists_anexos
+            WHERE checklist_id = %s
+            ORDER BY id
+            """,
+            (int(intervention_id),),
+        )
+        detail["photos"] = [
+            {"file_url": row["file_url"], "file_name": row["original_filename"] or "Anexo"}
+            for row in cursor.fetchall()
+        ]
+        return detail
+    except Exception:
+        app.logger.exception("Falha ao consultar detalhe da intervenção")
+        return None
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+
+
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -674,6 +732,15 @@ def manutencao():
         selected_equipment=selected_equipment,
         error=error,
     )
+
+
+@app.route("/manutencao/<intervention_id>")
+@login_required
+def manutencao_detalhe(intervention_id):
+    detail = maintenance_detail(intervention_id)
+    if not detail:
+        abort(404)
+    return render_template("maintenance_detail.html", detail=detail)
 
 
 @app.route("/documentos")

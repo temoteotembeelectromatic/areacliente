@@ -53,6 +53,7 @@
             <small>{{ item.date }}</small>
             <span class="status {{ 'status-watch' if item.status not in ['Concluída', 'ConcluÃ­da', 'Concluida'] else 'status-good' }}">{{ item.status }}</span>
             <small>{{ item.technician }}</small>
+            <a href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhes</a>
           </div>
         </article>
       {% endfor %}
