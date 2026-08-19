@@ -15,7 +15,7 @@
       <div><dt>Equipamento</dt><dd>{{ detail.numero_equipamento or detail.equipment }}</dd></div>
       <div><dt>Contrato</dt><dd>{{ detail.numero_contrato or detail.contract or '-' }}</dd></div>
       <div><dt>Cliente</dt><dd>{{ detail.numero_cliente or '-' }}</dd></div>
-      <div><dt>Tipo</dt><dd>{{ detail.tipo_equipamento or detail.type or detail.tipo_checklist or '-' }}</dd></div>
+      <div><dt>Tipo de intervenção</dt><dd>{{ detail.intervention_type or detail.tipo_equipamento or detail.type or detail.title or '-' }}</dd></div>
       <div><dt>Marca</dt><dd>{{ detail.marca or '-' }}</dd></div>
       <div><dt>Modelo</dt><dd>{{ detail.modelo or '-' }}</dd></div>
       <div><dt>Data</dt><dd>{{ detail.data_checklist or detail.date or '-' }}</dd></div>
@@ -23,6 +23,11 @@
       <div><dt>Posição</dt><dd>{{ detail.posicao or detail.location or '-' }}</dd></div>
       <div><dt>Técnico</dt><dd>{{ detail.tecnicos or detail.criado_por_nome or detail.technician or '-' }}</dd></div>
     </dl>
+    {% if detail.work_done %}
+      <div class="detail-text">
+        <div><dt>Trabalhos realizados</dt><p>{{ detail.work_done }}</p></div>
+      </div>
+    {% endif %}
     {% if detail.comentarios or detail.anomalias or detail.detalhes %}
       <div class="detail-text">
         {% if detail.comentarios %}<div><dt>Comentários</dt><p>{{ detail.comentarios }}</p></div>{% endif %}

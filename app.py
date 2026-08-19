@@ -563,6 +563,27 @@ def maintenance_detail(intervention_id):
         detail = cursor.fetchone()
         if not detail:
             return None
+        detail["intervention_type"] = detail.get("tipo_checklist") or "-"
+        detail["work_done"] = ""
+        try:
+            cursor.execute(
+                """
+                SELECT tipo_servico, trabalhos_realizados, observacoes_internas
+                FROM sharepoint_intervencoes
+                WHERE id = %s
+                LIMIT 1
+                """,
+                (int(intervention_id),),
+            )
+            service = cursor.fetchone()
+            if service:
+                detail["intervention_type"] = service["tipo_servico"] or detail["intervention_type"]
+                detail["work_done"] = service["trabalhos_realizados"] or service["observacoes_internas"] or ""
+        except Exception:
+            app.logger.exception("Falha ao consultar contexto da intervenção")
+            connection.rollback()
+        if not detail["work_done"] and isinstance(detail.get("respostas"), dict):
+            detail["work_done"] = detail["respostas"].get("trabalhos_realizados") or ""
         cursor.execute(
             """
             SELECT file_url, original_filename
