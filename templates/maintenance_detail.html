@@ -1,65 +1,84 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <header class="page-header">
-    <div>
-      <span class="eyebrow">Intervenção {{ detail.id }}</span>
-      <h1>{{ detail.tipo_checklist or detail.title or 'Detalhe da intervenção' }}</h1>
-      <p>Consulta detalhada em modo apenas de leitura.</p>
-    </div>
-    <a class="filter-chip" href="{{ url_for('manutencao', equipamento=detail.numero_equipamento or detail.equipment) }}">Voltar ao histórico</a>
-  </header>
+  <div class="detail-page">
+    <header class="detail-hero">
+      <strong>ELECTROMATIC</strong>
+      <span>Equipamento #{{ detail.numero_equipamento or detail.equipment }}</span>
+      <small>Contrato {{ detail.numero_contrato or detail.contract or '-' }}</small>
+    </header>
 
-  <section class="panel detail-panel">
-    <dl class="detail-grid">
-      <div><dt>Equipamento</dt><dd>{{ detail.numero_equipamento or detail.equipment }}</dd></div>
-      <div><dt>Contrato</dt><dd>{{ detail.numero_contrato or detail.contract or '-' }}</dd></div>
-      <div><dt>Cliente</dt><dd>{{ detail.numero_cliente or '-' }}</dd></div>
-      <div><dt>Tipo de intervenção</dt><dd>{{ detail.intervention_type or detail.tipo_equipamento or detail.type or detail.title or '-' }}</dd></div>
-      <div><dt>Marca</dt><dd>{{ detail.marca or '-' }}</dd></div>
-      <div><dt>Modelo</dt><dd>{{ detail.modelo or '-' }}</dd></div>
-      <div><dt>Data</dt><dd>{{ detail.data_checklist or detail.date or '-' }}</dd></div>
-      <div><dt>Estado</dt><dd>{{ detail.estado or detail.status or '-' }}</dd></div>
-      <div><dt>Posição</dt><dd>{{ detail.posicao or detail.location or '-' }}</dd></div>
-      <div><dt>Técnico</dt><dd>{{ detail.tecnicos or detail.criado_por_nome or detail.technician or '-' }}</dd></div>
-    </dl>
-    {% if detail.work_done %}
-      <div class="detail-text">
-        <div><dt>Trabalhos realizados</dt><p>{{ detail.work_done }}</p></div>
+    <div class="detail-toolbar">
+      <span>Intervenção #{{ detail.id }}</span>
+      <a href="{{ url_for('manutencao', equipamento=detail.numero_equipamento or detail.equipment) }}">Voltar ao histórico</a>
+    </div>
+
+    <section class="detail-summary-bar">
+      <div><span>Contrato</span><strong>{{ detail.numero_contrato or detail.contract or '-' }}</strong></div>
+      <div><span>Data</span><strong>{{ detail.data_checklist or detail.date or '-' }}</strong></div>
+      <div><span>Tipo</span><strong>{{ detail.intervention_type or detail.tipo_equipamento or detail.type or detail.title or '-' }}</strong></div>
+      <div><span>Estado</span><strong>{{ detail.estado or detail.status or '-' }}</strong></div>
+    </section>
+
+    <section class="detail-block">
+      <div class="detail-block-title">
+        <strong>Equipamento {{ detail.numero_equipamento or detail.equipment }}</strong>
+        <span>{{ detail.estado or detail.status or '-' }}</span>
       </div>
+      <dl class="detail-info-grid">
+        <div><dt>Cliente</dt><dd>{{ detail.numero_cliente or '-' }}</dd></div>
+        <div><dt>Tipo de equipamento</dt><dd>{{ detail.tipo_equipamento or detail.type or '-' }}</dd></div>
+        <div><dt>Marca</dt><dd>{{ detail.marca or '-' }}</dd></div>
+        <div><dt>Modelo</dt><dd>{{ detail.modelo or '-' }}</dd></div>
+        <div><dt>Posição</dt><dd>{{ detail.posicao or detail.location or '-' }}</dd></div>
+        <div><dt>Técnico</dt><dd>{{ detail.tecnicos or detail.criado_por_nome or detail.technician or '-' }}</dd></div>
+      </dl>
+    </section>
+
+    {% if detail.work_done or detail.comentarios or detail.anomalias or detail.detalhes %}
+      <section class="detail-block">
+        <div class="detail-block-heading">Trabalhos realizados e manutenção</div>
+        <div class="detail-copy-grid">
+          {% if detail.work_done %}<div><dt>Trabalhos realizados</dt><p>{{ detail.work_done }}</p></div>{% endif %}
+          {% if detail.comentarios %}<div><dt>Comentários</dt><p>{{ detail.comentarios }}</p></div>{% endif %}
+          {% if detail.anomalias %}<div><dt>Anomalias</dt><p>{{ detail.anomalias }}</p></div>{% endif %}
+          {% if detail.detalhes %}<div><dt>Detalhes</dt><p>{{ detail.detalhes }}</p></div>{% endif %}
+        </div>
+      </section>
     {% endif %}
-    {% if detail.comentarios or detail.anomalias or detail.detalhes %}
-      <div class="detail-text">
-        {% if detail.comentarios %}<div><dt>Comentários</dt><p>{{ detail.comentarios }}</p></div>{% endif %}
-        {% if detail.anomalias %}<div><dt>Anomalias</dt><p>{{ detail.anomalias }}</p></div>{% endif %}
-        {% if detail.detalhes %}<div><dt>Detalhes</dt><p>{{ detail.detalhes }}</p></div>{% endif %}
-      </div>
-    {% endif %}
+
     {% if detail.respostas and detail.respostas.secoes %}
-      <div class="checklist-results">
-        <h2>Resultados da checklist</h2>
+      <section class="detail-block">
+        <div class="detail-block-heading">Resultados da checklist</div>
         {% for section in detail.respostas.secoes %}
-          <section class="checklist-section">
-            <h3>{{ section.titulo or 'Checklist' }}</h3>
-            {% for question in section.perguntas or [] %}
-              <div class="checklist-answer">
-                <strong>{{ question.pergunta or question.codigo }}</strong>
-                <span>{{ question.resposta or '-' }}</span>
-              </div>
-            {% endfor %}
-          </section>
+          <div class="checklist-table-section">
+            <h2>{{ section.titulo or 'Checklist' }}</h2>
+            <div class="checklist-table">
+              <div class="checklist-table-head"><span>Pergunta</span><span>Resposta</span></div>
+              {% for question in section.perguntas or [] %}
+                <div class="checklist-table-row">
+                  <div><strong>{{ question.pergunta or question.codigo }}</strong>{% if question.descricao %}<small>{{ question.descricao }}</small>{% endif %}</div>
+                  <span class="answer-badge">{{ question.resposta or '-' }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
         {% endfor %}
-      </div>
+      </section>
     {% endif %}
+
     {% if detail.photos %}
-      <div class="detail-photos">
-        <h2>Fotografias e anexos</h2>
-        <div class="equipment-photos">
+      <section class="detail-block detail-photo-block">
+        <div class="detail-block-heading">Fotografias</div>
+        <div class="detail-photo-grid">
           {% for photo in detail.photos %}
-            <a href="{{ photo.file_url }}" target="_blank" rel="noopener"><img src="{{ photo.file_url }}" alt="{{ photo.file_name }}" loading="lazy"></a>
+            <a href="{{ photo.file_url }}" target="_blank" rel="noopener">
+              <img src="{{ photo.file_url }}" alt="{{ photo.file_name }}" loading="lazy">
+              <small>{{ photo.file_name }}</small>
+            </a>
           {% endfor %}
         </div>
-      </div>
+      </section>
     {% endif %}
-  </section>
+  </div>
 {% endblock %}
