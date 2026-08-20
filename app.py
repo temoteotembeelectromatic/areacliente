@@ -1221,6 +1221,38 @@ def maintenance_detail(intervention_id):
             connection.close()
 
 
+def maintenance_category(value):
+    normalized = str(value or "").casefold()
+    if "inspe" in normalized:
+        return "Inspeção", "inspection"
+    if "corret" in normalized or "correc" in normalized:
+        return "Corretiva", "corrective"
+    return "Manutenção", "maintenance"
+
+
+def maintenance_by_month(rows):
+    month_names = (
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    )
+    groups = {}
+    for row in rows:
+        date_value = row.get("data_checklist")
+        try:
+            parsed_date = date.fromisoformat(str(date_value)[:10])
+            month_key = f"{parsed_date.year:04d}-{parsed_date.month:02d}"
+            month_label = f"{month_names[parsed_date.month - 1]} {parsed_date.year}"
+        except (TypeError, ValueError):
+            month_key = "0000-00"
+            month_label = "Data não disponível"
+        category, tone = maintenance_category(row.get("tipo_checklist"))
+        item = dict(row)
+        item["category"] = category
+        item["tone"] = tone
+        groups.setdefault(month_key, {"label": month_label, "items": []})["items"].append(item)
+    return [groups[key] for key in sorted(groups, reverse=True)]
+
+
 def validated_checklists(contract, start_date, end_date):
     if not DATABASE_URL_2 or not contract or not start_date or not end_date:
         return [], None
@@ -1469,7 +1501,7 @@ def checklists():
     rows, error = validated_checklists(contract, start_date, end_date)
     return render_template(
         "checklists.html",
-        checklists=rows,
+        maintenance_months=maintenance_by_month(rows),
         contract=contract,
         start_date=start_date,
         end_date=end_date,

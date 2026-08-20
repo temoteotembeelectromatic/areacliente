@@ -1830,6 +1830,120 @@ textarea:focus {
   font-size: 0.85rem;
 }
 
+.maintenance-overview-header {
+  align-items: end;
+}
+
+.maintenance-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.maintenance-pill,
+.maintenance-record-type {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.maintenance-pill-maintenance,
+.maintenance-overview-maintenance .maintenance-record-type {
+  background: #d7eee6;
+  color: #126654;
+}
+
+.maintenance-pill-inspection,
+.maintenance-overview-inspection .maintenance-record-type {
+  background: #dcecf7;
+  color: #17618c;
+}
+
+.maintenance-pill-corrective,
+.maintenance-overview-corrective .maintenance-record-type {
+  background: #fff0d5;
+  color: #9a4c00;
+}
+
+.maintenance-overview-filters {
+  border-top-color: var(--electric);
+}
+
+.maintenance-months {
+  display: grid;
+  gap: 18px;
+}
+
+.maintenance-month {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.maintenance-month-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.maintenance-month-heading h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.maintenance-month-heading span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.maintenance-month-list {
+  display: grid;
+}
+
+.maintenance-overview-record {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.maintenance-overview-record:last-child {
+  border-bottom: 0;
+}
+
+.maintenance-overview-main {
+  display: grid;
+  gap: 4px;
+}
+
+.maintenance-overview-main h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.maintenance-overview-main span,
+.maintenance-overview-meta small {
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.maintenance-overview-meta {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
 .document-page-header {
   align-items: end;
 }
@@ -2000,6 +2114,24 @@ textarea:focus {
   .maintenance-summary,
   .maintenance-record {
     grid-template-columns: 1fr;
+  }
+
+  .maintenance-overview-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .maintenance-legend {
+    justify-content: flex-start;
+  }
+
+  .maintenance-overview-record {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .maintenance-overview-meta {
+    justify-items: start;
   }
 
   .piquete-steps {

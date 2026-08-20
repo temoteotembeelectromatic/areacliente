@@ -1,15 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <header class="page-header">
+  <header class="page-header maintenance-overview-header">
     <div>
-      <span class="eyebrow">Manutenção</span>
-      <h1>Extrair checklists validadas</h1>
-      <p>Pesquisar checklists validadas por contrato e período.</p>
+      <span class="eyebrow">Manutenções e inspeções</span>
+      <h1>Histórico por contrato</h1>
+      <p>Consulte registos validados, organizados por mês e tipologia.</p>
+    </div>
+    <div class="maintenance-legend" aria-label="Legenda de tipologias">
+      <span class="maintenance-pill maintenance-pill-maintenance">Manutenção</span>
+      <span class="maintenance-pill maintenance-pill-inspection">Inspeção</span>
+      <span class="maintenance-pill maintenance-pill-corrective">Corretiva</span>
     </div>
   </header>
 
-  <form class="equipment-filters checklist-filters" method="get" data-loading-form data-loading-text="A carregar...">
+  <form class="equipment-filters checklist-filters maintenance-overview-filters" method="get" data-loading-form data-loading-text="A carregar...">
     <label>N.º de contrato
       <input name="contrato" value="{{ contract }}" placeholder="Ex.: 774" required>
     </label>
@@ -25,20 +30,33 @@
   {% if error %}
     <section class="empty-state error-state"><h2>Consulta indisponível</h2><p>{{ error }}</p></section>
   {% elif not searched %}
-    <section class="empty-state"><p>Indique um contrato e um intervalo de datas para pesquisar checklists validadas.</p></section>
-  {% elif not checklists %}
-    <section class="empty-state"><h2>Sem resultados</h2><p>Não foram encontradas checklists validadas para os critérios indicados.</p></section>
+    <section class="empty-state"><p>Indique um contrato e um intervalo de datas para consultar manutenções e inspeções validadas.</p></section>
+  {% elif not maintenance_months %}
+    <section class="empty-state"><h2>Sem resultados</h2><p>Não foram encontrados registos validados para os critérios indicados.</p></section>
   {% else %}
-    <section class="panel">
-      <div class="equipment-results-meta"><strong>{{ checklists|length }} checklist{% if checklists|length != 1 %}s{% endif %}</strong><span>Validadas</span></div>
-      {% for item in checklists %}
-        <article class="row-item wide">
-          <div>
-            <strong>{{ item.tipo_checklist or 'Checklist' }}</strong>
-            <span>{{ item.numero_equipamento }} · Contrato {{ item.numero_contrato }} · {{ item.posicao or '-' }}</span>
+    <section class="maintenance-months">
+      {% for month in maintenance_months %}
+        <div class="maintenance-month">
+          <div class="maintenance-month-heading">
+            <h2>{{ month.label }}</h2>
+            <span>{{ month.items|length }} registo{% if month.items|length != 1 %}s{% endif %}</span>
           </div>
-          <div class="row-meta"><small>{{ item.data_checklist }}</small><span class="status status-good">{{ item.estado }}</span><a href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhes</a></div>
-        </article>
+          <div class="maintenance-month-list">
+            {% for item in month.items %}
+              <article class="maintenance-overview-record maintenance-overview-{{ item.tone }}">
+                <div class="maintenance-record-type">{{ item.category }}</div>
+                <div class="maintenance-overview-main">
+                  <h3>{{ item.tipo_checklist or item.category }}</h3>
+                  <span>Equipamento #{{ item.numero_equipamento }} · Contrato {{ item.numero_contrato }} · {{ item.posicao or '-' }}</span>
+                </div>
+                <div class="maintenance-overview-meta">
+                  <small>{{ item.data_checklist }}</small>
+                  <a class="contract-detail-link" href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhe</a>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
       {% endfor %}
     </section>
   {% endif %}
