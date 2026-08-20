@@ -434,6 +434,53 @@ select:focus {
   border-top: 4px solid var(--brand);
 }
 
+.dashboard-contracts {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--brand);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.dashboard-contracts .panel-header {
+  margin: 0;
+}
+
+.dashboard-contracts .panel-header h2 {
+  margin: 3px 0 0;
+  font-size: 1.05rem;
+}
+
+.dashboard-contract-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-contract-list a {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  padding: 13px;
+  color: var(--text);
+}
+
+.dashboard-contract-list a:hover {
+  border-color: var(--brand);
+}
+
+.dashboard-contract-list span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2031,7 +2078,8 @@ textarea:focus {
   .login-panel,
   .content-grid,
   .summary-grid,
-  .equipment-grid {
+  .equipment-grid,
+  .dashboard-contract-list {
     grid-template-columns: 1fr;
   }
 

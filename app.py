@@ -591,6 +591,71 @@ def documents_for_contract(contract_number):
     return [item for item in documents if item["contract"] == contract_number]
 
 
+def dashboard_equipment_context():
+    contracts = relevant_contracts()
+    allowed_numbers = current_allowed_client_numbers()
+    allowed_contract_numbers = [item["number"] for item in contracts]
+    if not DATABASE_URL_2:
+        visible_equipment = [
+            item for item in equipment
+            if (not allowed_numbers or item["numero_cliente"] in allowed_numbers)
+            and (not allowed_contract_numbers or item["numero_contrato"] in allowed_contract_numbers)
+        ]
+        return visible_equipment, len(visible_equipment), contracts
+    if not allowed_numbers and not EQUIPMENT_TEST_MODE:
+        return [], 0, contracts
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        clauses = ["TRIM(COALESCE(numero_equipamento, '')) <> ''"]
+        params = []
+        if allowed_numbers:
+            clauses.append("TRIM(COALESCE(numero_cliente, '')) = ANY(%s)")
+            params.append(allowed_numbers)
+        if allowed_contract_numbers:
+            clauses.append("TRIM(COALESCE(numero_contrato, '')) = ANY(%s)")
+            params.append(allowed_contract_numbers)
+        where_clause = " AND ".join(clauses)
+        cursor.execute(
+            f"""
+            SELECT COUNT(DISTINCT TRIM(COALESCE(numero_equipamento, ''))) AS total
+            FROM registo_equipamentos
+            WHERE {where_clause}
+            """,
+            params,
+        )
+        equipment_total = cursor.fetchone()["total"]
+        cursor.execute(
+            f"""
+            SELECT DISTINCT ON (TRIM(COALESCE(numero_equipamento, '')))
+                TRIM(COALESCE(numero_equipamento, '')) AS id,
+                COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') AS name,
+                TRIM(COALESCE(numero_contrato, '')) AS numero_contrato,
+                TRIM(COALESCE(numero_cliente, '')) AS numero_cliente
+            FROM registo_equipamentos
+            WHERE {where_clause}
+            ORDER BY TRIM(COALESCE(numero_equipamento, '')), registo_equipamentos.id DESC
+            LIMIT 3
+            """,
+            params,
+        )
+        return [dict(row) for row in cursor.fetchall()], equipment_total, contracts
+    except Exception:
+        app.logger.exception("Falha ao consultar o resumo de equipamentos")
+        return [], 0, contracts
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+
+
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -947,7 +1012,7 @@ def external_maintenance_history(selected_equipment):
                 COALESCE(NULLIF(TRIM(posicao), ''), '-') AS posicao
             FROM registo_equipamentos
             {scope_clause}
-            ORDER BY TRIM(COALESCE(numero_equipamento, '')), id DESC
+            ORDER BY TRIM(COALESCE(numero_equipamento, '')), registo_equipamentos.id DESC
             LIMIT 500
             """,
             scope_params,
@@ -1419,16 +1484,20 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    allowed_numbers = current_allowed_client_numbers()
-    visible_equipment = [
-        item for item in equipment
-        if not allowed_numbers or item["numero_cliente"] in allowed_numbers
-    ]
+    visible_equipment, equipment_total, contracts = dashboard_equipment_context()
     visible_equipment_ids = {item["id"] for item in visible_equipment}
+    client_total = len({item["client_number"] for item in contracts})
+    cards = [
+        {"label": "Equipamentos associados", "value": equipment_total, "tone": "neutral"},
+        {"label": "Contratos associados", "value": len(contracts), "tone": "success"},
+        {"label": "Clientes associados", "value": client_total, "tone": "warning"},
+        {"label": "Acesso válido até", "value": CONTRACT_VALID_UNTIL, "tone": "neutral"},
+    ]
     return render_template(
         "dashboard.html",
         profile=client_profile,
-        cards=summary_cards,
+        cards=cards,
+        contracts=contracts,
         equipment=visible_equipment,
         maintenance=[item for item in maintenance if item["equipment"] in visible_equipment_ids],
         guides=guides,

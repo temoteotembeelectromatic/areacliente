@@ -60,6 +60,10 @@ class LoginSecurityTests(unittest.TestCase):
 
         dashboard = self.client.get("/dashboard")
         self.assertEqual(dashboard.headers["Cache-Control"], "no-store, max-age=0")
+        dashboard_html = dashboard.get_data(as_text=True)
+        self.assertIn("Equipamentos associados", dashboard_html)
+        self.assertIn("Contratos associados", dashboard_html)
+        self.assertIn("CTR-2026-001", dashboard_html)
 
         empty_equipment = self.client.get("/equipamentos")
         self.assertEqual(empty_equipment.status_code, 200)

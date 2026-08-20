@@ -3,9 +3,9 @@
 {% block content %}
   <header class="page-header">
     <div>
-      <span class="eyebrow">Contrato ativo</span>
+      <span class="eyebrow">Área reservada</span>
       <h1>{{ profile.company }}</h1>
-      <p>Acesso ativo até {{ contract_valid_until }}. Consulte os seus equipamentos, intervenções e documentos técnicos.</p>
+      <p>Acesso ativo até {{ contract_valid_until }}. Consulte apenas os equipamentos, contratos e documentos associados à sua conta.</p>
     </div>
   </header>
 
@@ -18,6 +18,25 @@
     {% endfor %}
   </section>
 
+  <section class="dashboard-contracts">
+    <div class="panel-header">
+      <div><span class="eyebrow">Âmbito de acesso</span><h2>Contratos associados</h2></div>
+      <a href="{{ url_for('documentos') }}">Ver documentos</a>
+    </div>
+    {% if contracts %}
+      <div class="dashboard-contract-list">
+        {% for contract in contracts %}
+          <a href="{{ url_for('documentos_contrato', contract_number=contract.number) }}">
+            <strong>Contrato {{ contract.number }}</strong>
+            <span>{{ contract.client_name }} · Cliente {{ contract.client_number }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="panel-copy">Não existem contratos associados a esta conta.</p>
+    {% endif %}
+  </section>
+
   <section class="content-grid">
     <article class="panel">
       <div class="panel-header">
@@ -27,10 +46,10 @@
       {% for item in equipment[:3] %}
         <div class="row-item">
           <div>
-            <strong>{{ item.id }}</strong>
-            <span>{{ item.name }}</span>
+            <strong>Equipamento #{{ item.id }}</strong>
+            <span>{{ item.name }} · Contrato {{ item.numero_contrato }}</span>
           </div>
-          <small>{{ item.next_service }}</small>
+          <small>{{ item.numero_cliente }}</small>
         </div>
       {% endfor %}
     </article>
