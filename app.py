@@ -137,6 +137,16 @@ requests_list = [
     {"id": "SUP-1008", "subject": "Atualização de contactos", "status": "Resolvido", "date": "2026-08-09"},
 ]
 
+portal_users = [
+    {
+        "name": "Administrador do contrato",
+        "email": CLIENT_EMAIL,
+        "role": "Administrador",
+        "status": "Activo",
+        "last_access": "Acesso actual",
+    }
+]
+
 
 def login_required(view):
     @wraps(view)
@@ -990,6 +1000,17 @@ def apoio():
 @login_required
 def perfil():
     return render_template("profile.html", profile=client_profile)
+
+
+@app.route("/utilizadores")
+@login_required
+def utilizadores():
+    return render_template(
+        "users.html",
+        users=portal_users,
+        active_count=sum(user["status"] == "Activo" for user in portal_users),
+        profile=client_profile,
+    )
 
 
 @app.route("/health")

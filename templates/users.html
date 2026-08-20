@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header users-page-header">
+    <div>
+      <span class="eyebrow">Acessos do contrato</span>
+      <h1>Gestão de utilizadores</h1>
+      <p>Consulte quem tem acesso à área reservada do cliente.</p>
+    </div>
+    <a class="filter-submit users-request-link" href="{{ url_for('apoio') }}">Pedir novo acesso</a>
+  </header>
+
+  <section class="users-overview">
+    <div><span>Utilizadores activos</span><strong>{{ active_count }}</strong></div>
+    <div><span>Total de acessos</span><strong>{{ users|length }}</strong></div>
+    <div><span>Contrato</span><strong>{{ profile.company }}</strong></div>
+  </section>
+
+  <section class="panel users-panel">
+    <div class="users-panel-heading">
+      <div><h2>Acessos autorizados</h2><p>Os acessos são associados ao contrato activo.</p></div>
+      <span class="readonly-badge">Apenas leitura</span>
+    </div>
+    <div class="users-list">
+      {% for user in users %}
+        <article class="user-row">
+          <div class="user-avatar" aria-hidden="true">{{ user.name[:1] }}</div>
+          <div class="user-main"><strong>{{ user.name }}</strong><span>{{ user.email }}</span></div>
+          <span class="user-role">{{ user.role }}</span>
+          <span class="status status-good">{{ user.status }}</span>
+          <small>{{ user.last_access }}</small>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="users-note">
+    <strong>Precisa de alterar um acesso?</strong>
+    <span>Envie um pedido ao apoio para adicionar, remover ou actualizar um utilizador.</span>
+    <a href="{{ url_for('apoio') }}">Contactar apoio</a>
+  </section>
+{% endblock %}

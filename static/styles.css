@@ -1034,6 +1034,123 @@ select:focus {
   white-space: nowrap;
 }
 
+.users-page-header {
+  align-items: end;
+}
+
+.users-request-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #171717;
+}
+
+.users-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.users-overview div {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--brand);
+  padding: 16px;
+  background: var(--surface);
+}
+
+.users-overview span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.users-overview strong {
+  font-size: 1.25rem;
+}
+
+.users-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.users-panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+}
+
+.users-panel-heading p {
+  margin: 4px 0 0;
+}
+
+.users-list {
+  display: grid;
+  gap: 8px;
+}
+
+.user-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+
+.user-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #171717;
+  font-weight: 900;
+}
+
+.user-main {
+  display: grid;
+  gap: 3px;
+}
+
+.user-main span,
+.user-row small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.user-role {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.users-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  border-left: 4px solid var(--brand);
+  padding: 14px 16px;
+  background: var(--surface-strong);
+}
+
+.users-note span {
+  color: var(--muted);
+}
+
+.users-note a {
+  margin-left: auto;
+  font-weight: 800;
+}
+
 .checklist-results {
   display: grid;
   gap: 14px;
@@ -1304,6 +1421,28 @@ textarea:focus {
 
   .detail-photo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .users-panel-heading,
+  .users-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-row {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+  }
+
+  .user-row small {
+    grid-column: 2 / -1;
+  }
+
+  .users-note a {
+    margin-left: 0;
   }
 
 }
