@@ -982,7 +982,10 @@ def external_maintenance_history(selected_equipment):
                 created_at
             FROM checklists_manutencao
             WHERE TRIM(COALESCE(numero_equipamento, '')) = %s
-              AND LOWER(TRIM(COALESCE(estado, ''))) NOT IN ('serviço delegado', 'servico delegado')
+              AND LOWER(TRIM(COALESCE(estado, ''))) IN (
+                'validado', 'serviço validado', 'servico validado',
+                'serviço feito e validado', 'servico feito e validado'
+              )
             ORDER BY data_checklist DESC NULLS LAST, created_at DESC NULLS LAST, id DESC
             LIMIT 100
             """,
@@ -1024,7 +1027,11 @@ def external_maintenance_history(selected_equipment):
                     OR TRIM(COALESCE(equipamento_2_id, '')) = %s
                     OR TRIM(COALESCE(equipamento_3_id, '')) = %s
                 )
-                  AND LOWER(TRIM(COALESCE(estado_servico, ''))) NOT IN ('serviço delegado', 'servico delegado')
+                  AND LOWER(TRIM(COALESCE(estado_servico, ''))) NOT IN (
+                    'serviço delegado', 'servico delegado',
+                    'checklist por validar', 'checklist pendente de validação',
+                    'checklist pendente de validacao'
+                  )
                 ORDER BY data_fim DESC NULLS LAST, data_inicio DESC NULLS LAST, id DESC
                 LIMIT 100
                 """,
@@ -1098,6 +1105,10 @@ def maintenance_detail(intervention_id):
             LEFT JOIN registo_equipamentos e
               ON TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(c.numero_equipamento, ''))
             WHERE c.id = %s {scope_clause}
+              AND LOWER(TRIM(COALESCE(c.estado, ''))) IN (
+                'validado', 'serviço validado', 'servico validado',
+                'serviço feito e validado', 'servico feito e validado'
+              )
             ORDER BY e.id DESC NULLS LAST
             LIMIT 1
             """,
@@ -1114,6 +1125,11 @@ def maintenance_detail(intervention_id):
                     OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_2_id, ''))
                     OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_3_id, ''))
                 WHERE s.id = %s {scope_clause}
+                  AND LOWER(TRIM(COALESCE(s.estado_servico, ''))) NOT IN (
+                    'serviço delegado', 'servico delegado',
+                    'checklist por validar', 'checklist pendente de validação',
+                    'checklist pendente de validacao'
+                  )
                 ORDER BY e.id DESC NULLS LAST
                 LIMIT 1
                 """,
