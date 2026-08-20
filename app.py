@@ -330,6 +330,52 @@ def create_portal_user(email, password, name, role, client_numbers):
             connection.close()
 
 
+def find_client_source(cursor):
+    cursor.execute(
+        """
+        SELECT table_name, column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name IN ('clientes', 'cliente', 'registo_clientes', 'registo_equipamentos')
+        ORDER BY CASE table_name
+          WHEN 'clientes' THEN 1
+          WHEN 'cliente' THEN 2
+          WHEN 'registo_clientes' THEN 3
+          ELSE 4
+        END
+        """
+    )
+    table_columns = {}
+    for row in cursor.fetchall():
+        table_columns.setdefault(row["table_name"], set()).add(row["column_name"])
+    for table_name, columns in table_columns.items():
+        number_column = next(
+            (column for column in ("numero_cliente", "numero", "id") if column in columns),
+            None,
+        )
+        name_column = next(
+            (
+                column
+                for column in (
+                    "nome_empresa",
+                    "nome_da_empresa",
+                    "nome_cliente",
+                    "cliente_nome",
+                    "razao_social",
+                    "designacao_social",
+                    "nome",
+                    "empresa",
+                    "designacao",
+                )
+                if column in columns
+            ),
+            None,
+        )
+        if number_column and name_column:
+            return table_name, number_column, name_column
+    return None
+
+
 def external_client_rows(numbers):
     numbers = list(numbers)
     if not numbers:
@@ -346,24 +392,10 @@ def external_client_rows(numbers):
         )
         connection.set_session(readonly=True, autocommit=False)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(
-            """
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public' AND table_name = 'clientes'
-            """
-        )
-        columns = {row["column_name"] for row in cursor.fetchall()}
-        number_column = next(
-            (column for column in ("numero_cliente", "numero", "id") if column in columns),
-            None,
-        )
-        name_column = next(
-            (column for column in ("nome_empresa", "nome", "empresa", "designacao") if column in columns),
-            None,
-        )
-        if not number_column:
+        source = find_client_source(cursor)
+        if not source:
             return [{"number": number, "name": "Cliente associado"} for number in numbers]
+        table_name, number_column, name_column = source
         name_expression = (
             f"COALESCE(NULLIF(TRIM(CAST({name_column} AS TEXT)), ''), CAST({number_column} AS TEXT))"
             if name_column
@@ -373,7 +405,7 @@ def external_client_rows(numbers):
             f"""
             SELECT TRIM(CAST({number_column} AS TEXT)) AS number,
                    {name_expression} AS name
-            FROM clientes
+            FROM {table_name}
             WHERE TRIM(CAST({number_column} AS TEXT)) = ANY(%s)
             ORDER BY number
             """,
@@ -417,24 +449,10 @@ def external_client_search(query):
         )
         connection.set_session(readonly=True, autocommit=False)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(
-            """
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public' AND table_name = 'clientes'
-            """
-        )
-        columns = {row["column_name"] for row in cursor.fetchall()}
-        number_column = next(
-            (column for column in ("numero_cliente", "numero", "id") if column in columns),
-            None,
-        )
-        name_column = next(
-            (column for column in ("nome_empresa", "nome", "empresa", "designacao") if column in columns),
-            None,
-        )
-        if not number_column:
+        source = find_client_source(cursor)
+        if not source:
             return []
+        table_name, number_column, name_column = source
         number_expression = f"TRIM(CAST({number_column} AS TEXT))"
         name_expression = (
             f"COALESCE(NULLIF(TRIM(CAST({name_column} AS TEXT)), ''), {number_expression})"
@@ -445,7 +463,7 @@ def external_client_search(query):
         cursor.execute(
             f"""
             SELECT {number_expression} AS number, {name_expression} AS name
-            FROM clientes
+            FROM {table_name}
             WHERE {number_expression} ILIKE %s
                OR {name_expression} ILIKE %s
             ORDER BY name, number
