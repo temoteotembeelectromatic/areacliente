@@ -1,26 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <header class="page-header">
+  <header class="page-header document-page-header">
     <div>
       <span class="eyebrow">Arquivo técnico</span>
-      <h1>Documentos</h1>
-      <p>Relatórios, checklists e guias técnicos associados ao seu contrato.</p>
+      <h1>Documentos por contrato</h1>
+      <p>Seleccione um contrato para consultar relatórios, checklists e documentação técnica.</p>
     </div>
-    <a class="primary-button button-link" href="{{ url_for('documentos_bundle_pdf') }}">Descarregar PDF conjunto</a>
+    <span class="readonly-badge">Apenas leitura</span>
   </header>
-  <section class="panel">
-    {% for item in documents %}
-      <div class="row-item wide">
-        <div>
-          <strong>{{ item.title }}</strong>
-          <span>{{ item.id }} · {{ item.category }}</span>
-        </div>
-        <div class="row-meta">
-          <small>{{ item.date }}</small>
-          <a href="{{ url_for('documento_pdf', document_id=item.id) }}">Descarregar PDF</a>
-        </div>
-      </div>
-    {% endfor %}
-  </section>
+
+  {% if contracts %}
+    <section class="contract-directory" aria-label="Contratos disponíveis">
+      {% for contract in contracts %}
+        <article class="contract-directory-item">
+          <div class="contract-number">Contrato {{ contract.number }}</div>
+          <div class="contract-directory-main">
+            <span class="eyebrow">Cliente {{ contract.client_number }}</span>
+            <h2>{{ contract.client_name }}</h2>
+            <p>{{ contract.document_count }} documento{% if contract.document_count != 1 %}s{% endif %} disponível{% if contract.document_count != 1 %}is{% endif %}</p>
+          </div>
+          <a class="contract-detail-link" href="{{ url_for('documentos_contrato', contract_number=contract.number) }}">Ver documentos</a>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="empty-state">
+      <h2>Sem contratos disponíveis</h2>
+      <p>Não existem contratos associados a esta conta.</p>
+    </section>
+  {% endif %}
 {% endblock %}

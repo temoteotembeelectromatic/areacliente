@@ -66,7 +66,12 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertNotIn('class="equipment-card"', empty_equipment.get_data(as_text=True))
 
         documents = self.client.get("/documentos")
-        self.assertIn("Descarregar PDF conjunto", documents.get_data(as_text=True))
+        self.assertIn("Documentos por contrato", documents.get_data(as_text=True))
+        self.assertIn("CTR-2026-001", documents.get_data(as_text=True))
+
+        contract_documents = self.client.get("/documentos/contrato/CTR-2026-001")
+        self.assertEqual(contract_documents.status_code, 200)
+        self.assertIn("Relatório preventivo QGBT", contract_documents.get_data(as_text=True))
 
         maintenance_page = self.client.get("/manutencao")
         self.assertEqual(maintenance_page.status_code, 200)

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <header class="page-header document-page-header">
+    <div>
+      <a class="back-link" href="{{ url_for('documentos') }}">Voltar aos contratos</a>
+      <span class="eyebrow">Cliente {{ contract.client_number }} · {{ contract.client_name }}</span>
+      <h1>Contrato {{ contract.number }}</h1>
+      <p>Documentação técnica e registos disponíveis para este contrato.</p>
+    </div>
+    <a class="primary-button button-link" href="{{ url_for('documentos_bundle_pdf', contract_number=contract.number) }}">Descarregar conjunto</a>
+  </header>
+
+  {% if documents %}
+    <section class="contract-documents-list">
+      {% for item in documents %}
+        <article class="contract-document-item">
+          <div class="document-category">{{ item.category }}</div>
+          <div class="contract-document-main">
+            <h2>{{ item.title }}</h2>
+            <span>{{ item.id }} · {{ item.date }}</span>
+          </div>
+          <a class="contract-detail-link" href="{{ url_for('documento_pdf', document_id=item.id) }}">Abrir PDF</a>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="empty-state">
+      <h2>Sem documentos disponíveis</h2>
+      <p>A documentação deste contrato será apresentada aqui quando estiver disponível.</p>
+    </section>
+  {% endif %}
+{% endblock %}

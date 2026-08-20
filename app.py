@@ -155,10 +155,10 @@ maintenance = [
 ]
 
 documents = [
-    {"id": "DOC-018", "title": "Relatório preventivo QGBT", "category": "Manutenção preventiva", "date": "2026-08-14"},
-    {"id": "DOC-019", "title": "Relatório de ocorrência UPS", "category": "Manutenção corretiva", "date": "2026-08-16"},
-    {"id": "DOC-016", "title": "Checklist iluminacao de emergencia", "category": "Checklist", "date": "2026-07-22"},
-    {"id": "DOC-003", "title": "Guia de desbloqueio do grupo gerador", "category": "Guia técnico", "date": "2026-06-03"},
+    {"id": "DOC-018", "contract": "CTR-2026-001", "title": "Relatório preventivo QGBT", "category": "Manutenção preventiva", "date": "2026-08-14"},
+    {"id": "DOC-019", "contract": "CTR-2026-001", "title": "Relatório de ocorrência UPS", "category": "Manutenção corretiva", "date": "2026-08-16"},
+    {"id": "DOC-016", "contract": "CTR-2026-001", "title": "Checklist de iluminação de emergência", "category": "Checklist", "date": "2026-07-22"},
+    {"id": "DOC-003", "contract": "CTR-2026-001", "title": "Guia de desbloqueio do grupo gerador", "category": "Guia técnico", "date": "2026-06-03"},
 ]
 
 guides = [
@@ -555,6 +555,40 @@ def external_client_search(query):
         if connection is not None:
             connection.rollback()
             connection.close()
+
+
+def relevant_contracts():
+    user = current_user()
+    assigned_contracts = user.get("contracts", {})
+    clients = external_client_rows(current_allowed_client_numbers())
+    contracts = []
+    for client in clients:
+        numbers = assigned_contracts.get(client["number"]) or client.get("contracts", [])
+        for number in numbers:
+            contracts.append(
+                {
+                    "number": str(number),
+                    "client_number": client["number"],
+                    "client_name": client["name"],
+                }
+            )
+    if not contracts and not DATABASE_URL_2:
+        contracts = [
+            {
+                "number": "CTR-2026-001",
+                "client_number": "TESTE-001",
+                "client_name": client_profile["company"],
+            }
+        ]
+    for contract in contracts:
+        contract["document_count"] = sum(
+            item["contract"] == contract["number"] for item in documents
+        )
+    return sorted(contracts, key=lambda item: (item["client_name"], item["number"]))
+
+
+def documents_for_contract(contract_number):
+    return [item for item in documents if item["contract"] == contract_number]
 
 
 def login_required(view):
@@ -1410,22 +1444,61 @@ def checklists():
 @app.route("/documentos")
 @login_required
 def documentos():
-    return render_template("documents.html", documents=documents)
+    return render_template("documents.html", contracts=relevant_contracts())
+
+
+@app.route("/documentos/contrato/<contract_number>")
+@login_required
+def documentos_contrato(contract_number):
+    contract = next(
+        (item for item in relevant_contracts() if item["number"] == contract_number),
+        None,
+    )
+    if not contract:
+        abort(404)
+    return render_template(
+        "contract_documents.html",
+        contract=contract,
+        documents=documents_for_contract(contract_number),
+    )
 
 
 @app.route("/documentos/<document_id>/pdf")
 @login_required
 def documento_pdf(document_id):
     document = next((item for item in documents if item["id"] == document_id), None)
-    if not document:
+    allowed_contract_numbers = {item["number"] for item in relevant_contracts()}
+    if not document or document["contract"] not in allowed_contract_numbers:
         abort(404)
     return pdf_response(f"{document_id.lower()}.pdf", [document])
 
 
+@app.route("/documentos/contrato/<contract_number>/bundle.pdf")
+@login_required
+def documentos_bundle_pdf(contract_number):
+    contract = next(
+        (item for item in relevant_contracts() if item["number"] == contract_number),
+        None,
+    )
+    if not contract:
+        abort(404)
+    return pdf_response(
+        f"electromatic-{contract_number}.pdf",
+        documents_for_contract(contract_number),
+    )
+
+
 @app.route("/documentos/bundle.pdf")
 @login_required
-def documentos_bundle_pdf():
-    return pdf_response("electromatic-documentos.pdf", documents)
+def documentos_bundle_legacy():
+    contracts = relevant_contracts()
+    if not contracts:
+        abort(404)
+    contract_number = contracts[0]["number"]
+    return pdf_response(
+        f"electromatic-{contract_number}.pdf",
+        documents_for_contract(contract_number),
+    )
 
 
 @app.route("/apoio", methods=["GET", "POST"])
