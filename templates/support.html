@@ -18,7 +18,7 @@
           Mensagem
           <textarea name="message" rows="4" required></textarea>
         </label>
-        <button class="primary-button" type="submit">Pedir orientacao</button>
+        <button class="primary-button" type="submit">Pedir orientação</button>
       </form>
       {% if reply %}<p class="assistant-reply">{{ reply }}</p>{% endif %}
     </article>
@@ -26,12 +26,47 @@
       <h2>Gestor de contrato</h2>
       <p><strong>{{ profile.account_manager }}</strong></p>
       <p><a href="mailto:{{ profile.manager_email }}">{{ profile.manager_email }}</a><br>{{ profile.manager_phone }}</p>
-      <h2 class="support-heading">Piquete</h2>
-      <p>Para ocorrências urgentes, contacte primeiro o gestor de contrato.</p>
     </article>
   </section>
+
+  <section class="piquete-service">
+    <div class="piquete-intro">
+      <span class="eyebrow">Resposta fora de horário</span>
+      <h2>Serviço de Piquete</h2>
+      <p>Conte connosco em situações críticas fora do horário normal de trabalho. A equipa procura estabilizar a ocorrência, garantir a segurança das pessoas e do espaço e encaminhar a reparação definitiva para manutenção correctiva.</p>
+      <a class="piquete-call" href="tel:+351914130921">Ligar para 914 130 921</a>
+    </div>
+    <div class="piquete-coverage">
+      <div><span>Cobertura</span><strong>Clientes Basic e Full Care</strong></div>
+      <div><span>Dias de semana</span><strong>18h00 às 23h00</strong></div>
+      <div><span>Sábados, domingos e feriados</span><strong>09h00 às 23h00</strong></div>
+    </div>
+  </section>
+
+  <section class="piquete-process">
+    <div class="piquete-section-heading">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Da chamada à intervenção</h2>
+    </div>
+    <ol class="piquete-steps">
+      <li><strong>Contacto imediato</strong><span>Em caso de emergência, ligue para o serviço de piquete.</span></li>
+      <li><strong>Diagnóstico inicial</strong><span>É feita uma avaliação por telefone para perceber a natureza e a gravidade da ocorrência.</span></li>
+      <li><strong>Acção rápida</strong><span>Quando necessário, um técnico desloca-se ao local para garantir a segurança.</span></li>
+      <li><strong>Relatório detalhado</strong><span>Após a intervenção, recebe um relatório com os trabalhos efectuados e o encaminhamento recomendado.</span></li>
+    </ol>
+  </section>
+
+  <section class="piquete-pricing">
+    <div>
+      <span class="eyebrow">Preçário</span>
+      <h2>Serviço de Piquete</h2>
+    </div>
+    <div class="price-item"><span>Intervenção + primeira hora</span><strong>260,00 EUR <small>+ IVA</small></strong></div>
+    <div class="price-item"><span>Hora adicional</span><strong>85,00 EUR <small>+ IVA</small></strong><small>Facturação à fracção de hora.</small></div>
+  </section>
+
   <section class="panel">
-    <div class="panel-header"><h2>Guias rapidos</h2></div>
+    <div class="panel-header"><h2>Guias rápidos</h2></div>
     {% for guide in guides %}<p class="guide-item">{{ guide }}</p>{% endfor %}
   </section>
 {% endblock %}

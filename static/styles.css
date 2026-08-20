@@ -1552,6 +1552,139 @@ textarea:focus {
   border-top: 0;
 }
 
+.piquete-service {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 32px;
+  margin: 18px 0;
+  padding: 30px;
+  border-top: 4px solid var(--brand);
+  background: #171717;
+  color: #ffffff;
+}
+
+.piquete-intro {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.piquete-intro .eyebrow,
+.piquete-section-heading .eyebrow {
+  color: var(--brand);
+}
+
+.piquete-intro h2,
+.piquete-section-heading h2,
+.piquete-pricing h2 {
+  margin: 0;
+}
+
+.piquete-intro p {
+  max-width: 720px;
+  margin: 0;
+  color: #e6e6e6;
+}
+
+.piquete-call {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 46px;
+  margin-top: 6px;
+  padding: 0 18px;
+  background: var(--brand);
+  color: #171717;
+  font-weight: 900;
+}
+
+.piquete-coverage {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  border-top: 1px solid #454545;
+}
+
+.piquete-coverage div {
+  display: grid;
+  gap: 5px;
+  border-bottom: 1px solid #454545;
+  padding: 14px 0;
+}
+
+.piquete-coverage span,
+.price-item > span {
+  color: #bcbcbc;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.piquete-process {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.45fr) minmax(0, 1fr);
+  gap: 28px;
+  padding: 26px 0;
+}
+
+.piquete-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: piquete-step;
+}
+
+.piquete-steps li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  column-gap: 10px;
+  border-top: 2px solid var(--brand);
+  padding: 13px 0;
+  counter-increment: piquete-step;
+}
+
+.piquete-steps li::before {
+  content: "0" counter(piquete-step);
+  grid-row: span 2;
+  color: #9a4c00;
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.piquete-steps span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.piquete-pricing {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(200px, 0.8fr) minmax(200px, 0.8fr);
+  gap: 24px;
+  align-items: center;
+  padding: 24px 28px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--brand);
+  background: var(--surface);
+}
+
+.price-item {
+  display: grid;
+  gap: 5px;
+}
+
+.price-item strong {
+  font-size: 1.15rem;
+}
+
+.price-item small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .document-page-header {
   align-items: end;
 }
@@ -1694,6 +1827,16 @@ textarea:focus {
 
   .document-page-header {
     align-items: flex-start;
+  }
+
+  .piquete-service,
+  .piquete-process,
+  .piquete-pricing {
+    grid-template-columns: 1fr;
+  }
+
+  .piquete-steps {
+    grid-template-columns: 1fr;
   }
 
   .contract-directory-item,

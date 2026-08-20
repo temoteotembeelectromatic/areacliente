@@ -73,6 +73,11 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertEqual(contract_documents.status_code, 200)
         self.assertIn("Relatório preventivo QGBT", contract_documents.get_data(as_text=True))
 
+        support = self.client.get("/apoio")
+        self.assertEqual(support.status_code, 200)
+        self.assertIn("Serviço de Piquete", support.get_data(as_text=True))
+        self.assertIn("914 130 921", support.get_data(as_text=True))
+
         maintenance_page = self.client.get("/manutencao")
         self.assertEqual(maintenance_page.status_code, 200)
         self.assertIn("Seleccione um equipamento", maintenance_page.get_data(as_text=True))

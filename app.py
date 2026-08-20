@@ -1509,7 +1509,7 @@ def apoio():
         verify_csrf()
         message = request.form.get("message", "").strip().lower()
         if any(term in message for term in ("avaria", "urgente", "piquete")):
-            reply = "Para uma avaria urgente, contacte a piquete através do gestor de contrato."
+            reply = "Para uma ocorrência urgente fora do horário normal, contacte a piquete em 914 130 921."
         elif any(term in message for term in ("relatorio", "pdf", "checklist")):
             reply = "Os relatórios e checklists estão disponíveis na área Documentos."
         else:
