@@ -216,6 +216,16 @@ def load_user_accounts():
             )
             """
         )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS portal_user_contracts (
+                user_id BIGINT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+                numero_cliente TEXT NOT NULL,
+                numero_contrato TEXT NOT NULL,
+                PRIMARY KEY (user_id, numero_cliente, numero_contrato)
+            )
+            """
+        )
         cursor.execute("SELECT COUNT(*) AS total FROM portal_users")
         if cursor.fetchone()["total"] == 0:
             first = client_accounts[0]
@@ -245,6 +255,19 @@ def load_user_accounts():
             """
         )
         accounts = [dict(row) for row in cursor.fetchall()]
+        cursor.execute(
+            """
+            SELECT user_id, numero_cliente, ARRAY_AGG(numero_contrato ORDER BY numero_contrato) AS contracts
+            FROM portal_user_contracts
+            GROUP BY user_id, numero_cliente
+            """
+        )
+        for account in accounts:
+            account["contracts"] = {}
+        for row in cursor.fetchall():
+            account = next((item for item in accounts if item["id"] == row["user_id"]), None)
+            if account is not None:
+                account["contracts"][row["numero_cliente"]] = row["contracts"]
         connection.commit()
         return accounts
     except Exception:
@@ -288,12 +311,13 @@ def portal_users_for_page():
             "status": "Activo",
             "last_access": "Acesso actual" if str(account.get("id", index)) == current_id else "—",
             "client_numbers": account["client_numbers"] or CLIENT_ALLOWED_NUMBERS,
+            "contracts": account.get("contracts", {}),
         }
         for index, account in enumerate(accounts)
     ]
 
 
-def create_portal_user(email, password, name, role, client_numbers):
+def create_portal_user(email, password, name, role, client_numbers, contracts):
     if not DATABASE_URL:
         return False, "Configure DATABASE_URL para guardar novos utilizadores."
     connection = None
@@ -314,6 +338,11 @@ def create_portal_user(email, password, name, role, client_numbers):
                 "INSERT INTO portal_user_clients (user_id, numero_cliente) VALUES (%s, %s)",
                 (user_id, number),
             )
+            for contract in contracts.get(number, []):
+                cursor.execute(
+                    "INSERT INTO portal_user_contracts (user_id, numero_cliente, numero_contrato) VALUES (%s, %s, %s)",
+                    (user_id, number, contract),
+                )
         connection.commit()
         return True, "Utilizador criado e associado aos clientes indicados."
     except psycopg2.errors.UniqueViolation:
@@ -384,12 +413,42 @@ def find_client_source(cursor):
     return None
 
 
+def add_client_contracts(cursor, rows):
+    numbers = [row["number"] for row in rows]
+    for row in rows:
+        row["contracts"] = []
+    if not numbers:
+        return rows
+    cursor.execute(
+        """
+        SELECT TRIM(COALESCE(numero_cliente, '')) AS number,
+               ARRAY_AGG(DISTINCT TRIM(COALESCE(numero_contrato, '')) ORDER BY TRIM(COALESCE(numero_contrato, ''))) AS contracts
+        FROM registo_equipamentos
+        WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)
+          AND TRIM(COALESCE(numero_contrato, '')) <> ''
+        GROUP BY TRIM(COALESCE(numero_cliente, ''))
+        """,
+        (numbers,),
+    )
+    contracts_by_number = {item["number"]: item["contracts"] for item in cursor.fetchall()}
+    for row in rows:
+        row["contracts"] = contracts_by_number.get(row["number"], [])
+    return rows
+
+
 def external_client_rows(numbers):
     numbers = list(numbers)
     if not numbers:
         return []
     if not DATABASE_URL_2:
-        return [{"number": number, "name": "Cliente de teste"} for number in numbers]
+        return [
+            {
+                "number": number,
+                "name": "Cliente de teste",
+                "contracts": sorted({item["numero_contrato"] for item in equipment if item["numero_cliente"] == number}),
+            }
+            for number in numbers
+        ]
 
     connection = None
     try:
@@ -423,6 +482,7 @@ def external_client_rows(numbers):
             {"number": row["number"], "name": row["name"] or "Cliente associado"}
             for row in cursor.fetchall()
         ]
+        rows = add_client_contracts(cursor, rows)
         known_numbers = {row["number"] for row in rows}
         rows.extend(
             {"number": number, "name": "Cliente associado"}
@@ -443,7 +503,11 @@ def external_client_search(query):
     query = query.strip()[:100]
     if not DATABASE_URL_2:
         return [
-            {"number": row["numero_cliente"], "name": "Cliente de teste"}
+            {
+                "number": row["numero_cliente"],
+                "name": "Cliente de teste",
+                "contracts": [row["numero_contrato"]],
+            }
             for row in equipment
             if not query or query.casefold() in row["numero_cliente"].casefold()
         ][:20]
@@ -479,10 +543,11 @@ def external_client_search(query):
             """,
             (search, search),
         )
-        return [
+        rows = [
             {"number": row["number"], "name": row["name"] or row["number"]}
             for row in cursor.fetchall()
         ]
+        return add_client_contracts(cursor, rows)
     except Exception:
         app.logger.exception("Falha na pesquisa de clientes")
         return []
@@ -1394,10 +1459,22 @@ def utilizadores():
                 if value.strip()
             }
         )
-        if not email or not name or len(password) < 12 or not client_numbers:
+        try:
+            selected_contracts = json.loads(request.form.get("client_contracts", "{}"))
+        except json.JSONDecodeError:
+            selected_contracts = {}
+        selected_contracts = {
+            number: [str(contract).strip() for contract in selected_contracts.get(number, []) if str(contract).strip()]
+            for number in client_numbers
+        } if isinstance(selected_contracts, dict) else {}
+        if not email or not name or len(password) < 12 or not client_numbers or any(
+            not selected_contracts.get(number) for number in client_numbers
+        ):
             flash("Indique nome, e-mail, palavra-passe com 12 caracteres e pelo menos um cliente.", "error")
         else:
-            created, message = create_portal_user(email, password, name, role, client_numbers)
+            created, message = create_portal_user(
+                email, password, name, role, client_numbers, selected_contracts
+            )
             flash(message, "success" if created else "error")
         return redirect(url_for("utilizadores"))
 

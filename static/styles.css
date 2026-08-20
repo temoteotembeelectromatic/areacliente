@@ -1294,6 +1294,12 @@ select:focus {
   border-bottom: 0;
 }
 
+.contract-list {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .checklist-results {
   display: grid;
   gap: 14px;

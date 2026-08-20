@@ -27,6 +27,7 @@
           <div id="client-suggestions" class="client-suggestions" role="listbox"></div>
           <div id="selected-client-numbers" class="selected-client-numbers"></div>
           <input id="client-numbers" name="client_numbers" type="hidden" required>
+          <input id="client-contracts" name="client_contracts" type="hidden" required>
         </label>
         <button class="filter-submit user-create-submit" type="submit">Criar acesso</button>
       </form>
@@ -65,20 +66,26 @@
 
   <section class="panel users-panel clients-panel">
     <div class="users-panel-heading">
-      <div><h2>Clientes associados</h2><p>Estes são os clientes cujos equipamentos e intervenções ficam disponíveis.</p></div>
+      <div><h2>Clientes associados</h2><p>Os contratos associados definem futuramente quais equipamentos ficam disponíveis.</p></div>
       <span class="readonly-badge">Âmbito de acesso</span>
     </div>
     <div class="clients-table-wrap">
       <table class="clients-table">
         <thead>
-          <tr><th>N.º de cliente</th><th>Cliente</th><th>Acesso</th></tr>
+          <tr><th>N.º de cliente</th><th>Cliente</th><th>Contratos associados</th></tr>
         </thead>
         <tbody>
           {% for client in clients %}
             <tr>
               <td><strong>{{ client.number }}</strong></td>
               <td>{{ client.name }}</td>
-              <td><span class="status status-good">Equipamentos e manutenção</span></td>
+              <td>
+                {% if client.contracts %}
+                  <span class="contract-list">{{ client.contracts|join(", ") }}</span>
+                {% else %}
+                  <span class="status status-good">Sem contratos encontrados</span>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>

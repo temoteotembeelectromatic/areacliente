@@ -14,22 +14,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const clientSuggestions = document.querySelector("#client-suggestions");
   const selectedClients = document.querySelector("#selected-client-numbers");
   const clientNumbers = document.querySelector("#client-numbers");
+  const clientContracts = document.querySelector("#client-contracts");
   const createUserForm = document.querySelector("#user-create-form");
-  if (!clientSearch || !clientSuggestions || !selectedClients || !clientNumbers || !createUserForm) return;
+  if (!clientSearch || !clientSuggestions || !selectedClients || !clientNumbers || !clientContracts || !createUserForm) return;
 
   const chosen = new Map();
   let searchTimer;
 
   const syncChosen = () => {
     clientNumbers.value = Array.from(chosen.keys()).join(",");
+    clientContracts.value = JSON.stringify(
+      Object.fromEntries(Array.from(chosen.entries()).map(([number, item]) => [number, item.contracts || []]))
+    );
     selectedClients.replaceChildren();
-    chosen.forEach((name, number) => {
+    chosen.forEach((item, number) => {
       const chip = document.createElement("span");
       chip.className = "selected-client-chip";
-      chip.textContent = `${name} (${number})`;
+      chip.textContent = `${item.name} (${number}) · ${item.contracts?.length || 0} contrato(s)`;
       const remove = document.createElement("button");
       remove.type = "button";
-      remove.setAttribute("aria-label", `Remover ${name}`);
+      remove.setAttribute("aria-label", `Remover ${item.name}`);
       remove.textContent = "×";
       remove.addEventListener("click", () => {
         chosen.delete(number);
@@ -49,10 +53,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const number = document.createElement("strong");
       number.textContent = item.number;
       const name = document.createElement("small");
-      name.textContent = item.name;
+      name.textContent = `${item.name} · ${(item.contracts || []).length} contrato(s)`;
       option.append(number, name);
       option.addEventListener("click", () => {
-        chosen.set(String(item.number), item.name);
+        chosen.set(String(item.number), {
+          name: item.name,
+          contracts: item.contracts || [],
+        });
         clientSearch.value = "";
         clientSuggestions.replaceChildren();
         clientSearch.setAttribute("aria-expanded", "false");
