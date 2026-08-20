@@ -940,6 +940,46 @@ select:focus {
   font-weight: 700;
 }
 
+.equipment-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.equipment-action-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  background: var(--brand);
+  color: #151515;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.equipment-action-link:hover {
+  background: var(--electric);
+}
+
+.equipment-action-link.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.equipment-action-link.secondary:hover {
+  border-color: var(--brand);
+  background: var(--electric-soft);
+}
+
+.equipment-table-actions {
+  display: flex;
+  gap: 10px;
+  font-weight: 700;
+}
+
 .detail-panel {
   display: grid;
   gap: 24px;

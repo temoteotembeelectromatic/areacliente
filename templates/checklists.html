@@ -4,7 +4,7 @@
   <header class="page-header maintenance-overview-header">
     <div>
       <span class="eyebrow">Manutenções e inspeções</span>
-      <h1>Histórico por contrato</h1>
+      <h1>{% if selected_equipment %}Manutenções do equipamento #{{ selected_equipment }}{% else %}Histórico por contrato{% endif %}</h1>
       <p>Consulte registos validados, organizados por mês e tipologia.</p>
     </div>
     <div class="maintenance-legend" aria-label="Legenda de tipologias">
@@ -15,6 +15,7 @@
   </header>
 
   <form class="equipment-filters checklist-filters maintenance-overview-filters" method="get" data-loading-form data-loading-text="A carregar...">
+    {% if selected_equipment %}<input type="hidden" name="equipamento" value="{{ selected_equipment }}">{% endif %}
     <label>Data inicial
       <input type="date" name="data_inicio" value="{{ start_date }}" required>
     </label>

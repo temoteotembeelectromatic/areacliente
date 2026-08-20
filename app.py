@@ -1318,7 +1318,7 @@ def maintenance_by_month(rows):
     return [groups[key] for key in sorted(groups, reverse=True)]
 
 
-def validated_checklists(contract, start_date, end_date):
+def validated_checklists(contract, start_date, end_date, equipment_number=""):
     if not DATABASE_URL_2 or not start_date or not end_date:
         return [], None
     connection = None
@@ -1339,6 +1339,10 @@ def validated_checklists(contract, start_date, end_date):
         elif contract:
             contract_clause = "AND TRIM(COALESCE(c.numero_contrato, '')) = %s"
             params.append(contract)
+        equipment_clause = ""
+        if equipment_number:
+            equipment_clause = "AND TRIM(COALESCE(c.numero_equipamento, '')) = %s"
+            params.append(equipment_number)
         scope_clause = ""
         allowed_numbers = current_allowed_client_numbers()
         if allowed_numbers:
@@ -1358,6 +1362,7 @@ def validated_checklists(contract, start_date, end_date):
             WHERE c.data_checklist >= %s::date
               AND c.data_checklist <= %s::date
               {contract_clause}
+              {equipment_clause}
               AND LOWER(TRIM(COALESCE(c.estado, ''))) IN (
                 'validado', 'serviço validado', 'servico validado',
                 'serviço feito e validado', 'servico feito e validado'
@@ -1579,14 +1584,19 @@ def manutencao_detalhe(intervention_id):
 def checklists():
     start_date = request.args.get("data_inicio", "").strip()[:10]
     end_date = request.args.get("data_fim", "").strip()[:10]
-    rows, error = validated_checklists("", start_date, end_date)
+    selected_equipment = request.args.get("equipamento", "").strip()[:100]
+    if selected_equipment and not start_date and not end_date:
+        start_date = "2000-01-01"
+        end_date = date.today().isoformat()
+    rows, error = validated_checklists("", start_date, end_date, selected_equipment)
     return render_template(
         "checklists.html",
         maintenance_months=maintenance_by_month(rows),
         start_date=start_date,
         end_date=end_date,
+        selected_equipment=selected_equipment,
         error=error,
-        searched=bool(start_date or end_date),
+        searched=bool(start_date and end_date),
     )
 
 

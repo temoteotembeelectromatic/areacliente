@@ -82,6 +82,7 @@
             <th>Localização</th>
             <th>Garantia</th>
             <th>Estado</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -95,6 +96,10 @@
               <td>{{ item.location }}</td>
               <td>{% if item.in_warranty %}Até {{ item.warranty_until }}{% else %}Sem garantia{% endif %}</td>
               <td><span class="status {{ 'status-good' if item.status in ['Operacional', 'Bom'] else 'status-watch' }}">{{ item.status }}</span></td>
+              <td class="equipment-table-actions">
+                <a href="{{ url_for('manutencao', equipamento=item.id) }}">Intervenções</a>
+                <a href="{{ url_for('checklists', equipamento=item.id) }}">Checklists</a>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -125,6 +130,10 @@
             <div><dt>Localização</dt><dd>{{ item.location }}</dd></div>
             <div><dt>Garantia</dt><dd>{% if item.in_warranty %}Até {{ item.warranty_until }}{% else %}Sem garantia{% endif %}</dd></div>
           </dl>
+          <div class="equipment-card-actions">
+            <a class="equipment-action-link" href="{{ url_for('manutencao', equipamento=item.id) }}">Ver histórico de intervenções</a>
+            <a class="equipment-action-link secondary" href="{{ url_for('checklists', equipamento=item.id) }}">Ver manutenções e checklists</a>
+          </div>
         </article>
       {% endfor %}
     </section>
