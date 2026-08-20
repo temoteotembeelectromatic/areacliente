@@ -1254,7 +1254,7 @@ def maintenance_by_month(rows):
 
 
 def validated_checklists(contract, start_date, end_date):
-    if not DATABASE_URL_2 or not contract or not start_date or not end_date:
+    if not DATABASE_URL_2 or not start_date or not end_date:
         return [], None
     connection = None
     try:
@@ -1265,7 +1265,15 @@ def validated_checklists(contract, start_date, end_date):
         )
         connection.set_session(readonly=True, autocommit=False)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
-        params = [contract, start_date, end_date]
+        params = [start_date, end_date]
+        contract_clause = ""
+        allowed_contract_numbers = [item["number"] for item in relevant_contracts()]
+        if allowed_contract_numbers:
+            contract_clause = "AND TRIM(COALESCE(c.numero_contrato, '')) = ANY(%s)"
+            params.append(allowed_contract_numbers)
+        elif contract:
+            contract_clause = "AND TRIM(COALESCE(c.numero_contrato, '')) = %s"
+            params.append(contract)
         scope_clause = ""
         allowed_numbers = current_allowed_client_numbers()
         if allowed_numbers:
@@ -1282,9 +1290,9 @@ def validated_checklists(contract, start_date, end_date):
             SELECT c.id, c.tipo_checklist, c.data_checklist, c.numero_contrato,
                    c.numero_equipamento, c.posicao, c.estado, c.tecnicos, c.criado_por_nome
             FROM checklists_manutencao c
-            WHERE TRIM(COALESCE(c.numero_contrato, '')) = %s
-              AND c.data_checklist >= %s::date
+            WHERE c.data_checklist >= %s::date
               AND c.data_checklist <= %s::date
+              {contract_clause}
               AND LOWER(TRIM(COALESCE(c.estado, ''))) IN (
                 'validado', 'serviço validado', 'servico validado',
                 'serviço feito e validado', 'servico feito e validado'
@@ -1495,18 +1503,16 @@ def manutencao_detalhe(intervention_id):
 @app.route("/checklists")
 @login_required
 def checklists():
-    contract = request.args.get("contrato", "").strip()[:100]
     start_date = request.args.get("data_inicio", "").strip()[:10]
     end_date = request.args.get("data_fim", "").strip()[:10]
-    rows, error = validated_checklists(contract, start_date, end_date)
+    rows, error = validated_checklists("", start_date, end_date)
     return render_template(
         "checklists.html",
         maintenance_months=maintenance_by_month(rows),
-        contract=contract,
         start_date=start_date,
         end_date=end_date,
         error=error,
-        searched=bool(contract or start_date or end_date),
+        searched=bool(start_date or end_date),
     )
 
 

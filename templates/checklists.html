@@ -15,9 +15,6 @@
   </header>
 
   <form class="equipment-filters checklist-filters maintenance-overview-filters" method="get" data-loading-form data-loading-text="A carregar...">
-    <label>N.º de contrato
-      <input name="contrato" value="{{ contract }}" placeholder="Ex.: 774" required>
-    </label>
     <label>Data inicial
       <input type="date" name="data_inicio" value="{{ start_date }}" required>
     </label>
@@ -30,7 +27,7 @@
   {% if error %}
     <section class="empty-state error-state"><h2>Consulta indisponível</h2><p>{{ error }}</p></section>
   {% elif not searched %}
-    <section class="empty-state"><p>Indique um contrato e um intervalo de datas para consultar manutenções e inspeções validadas.</p></section>
+    <section class="empty-state"><p>Indique um intervalo de datas para consultar manutenções e inspeções validadas dos seus contratos.</p></section>
   {% elif not maintenance_months %}
     <section class="empty-state"><h2>Sem resultados</h2><p>Não foram encontrados registos validados para os critérios indicados.</p></section>
   {% else %}

@@ -577,7 +577,7 @@ select:focus {
 }
 
 .checklist-filters {
-  grid-template-columns: 1.2fr 1fr 1fr auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
   align-items: end;
 }
 
