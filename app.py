@@ -1585,9 +1585,11 @@ def checklists():
     start_date = request.args.get("data_inicio", "").strip()[:10]
     end_date = request.args.get("data_fim", "").strip()[:10]
     selected_equipment = request.args.get("equipamento", "").strip()[:100]
-    if selected_equipment and not start_date and not end_date:
-        start_date = "2000-01-01"
-        end_date = date.today().isoformat()
+    today = date.today()
+    if not start_date:
+        start_date = (today - timedelta(days=365)).isoformat()
+    if not end_date:
+        end_date = today.isoformat()
     rows, error = validated_checklists("", start_date, end_date, selected_equipment)
     return render_template(
         "checklists.html",
