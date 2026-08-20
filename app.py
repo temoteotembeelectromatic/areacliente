@@ -14,7 +14,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from werkzeug.middleware.proxy_fix import ProxyFix
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
@@ -40,6 +40,7 @@ PRIVACY_EMAIL = os.environ.get("PRIVACY_EMAIL", "").strip()
 PRIVACY_UPDATED_AT = os.environ.get("PRIVACY_UPDATED_AT", "2026-08-17")
 CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
 DATABASE_URL_2 = os.environ.get("DATABASE_URL_2", "").strip()
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 CLIENT_ALLOWED_NUMBERS = [
     value.strip()
     for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
@@ -184,11 +185,89 @@ requests_list = [
     {"id": "SUP-1008", "subject": "Atualização de contactos", "status": "Resolvido", "date": "2026-08-09"},
 ]
 
+def load_user_accounts():
+    if not DATABASE_URL:
+        return client_accounts
+
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        connection.autocommit = False
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS portal_users (
+                id BIGSERIAL PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'Utilizador',
+                status TEXT NOT NULL DEFAULT 'Activo',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS portal_user_clients (
+                user_id BIGINT NOT NULL REFERENCES portal_users(id) ON DELETE CASCADE,
+                numero_cliente TEXT NOT NULL,
+                PRIMARY KEY (user_id, numero_cliente)
+            )
+            """
+        )
+        cursor.execute("SELECT COUNT(*) AS total FROM portal_users")
+        if cursor.fetchone()["total"] == 0:
+            first = client_accounts[0]
+            cursor.execute(
+                """
+                INSERT INTO portal_users (email, password_hash, name, role)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+                """,
+                (first["email"], first["password_hash"], first["name"], "Administrador"),
+            )
+            user_id = cursor.fetchone()["id"]
+            for number in first["client_numbers"] or CLIENT_ALLOWED_NUMBERS:
+                cursor.execute(
+                    "INSERT INTO portal_user_clients (user_id, numero_cliente) VALUES (%s, %s)",
+                    (user_id, number),
+                )
+        cursor.execute(
+            """
+            SELECT u.id, u.email, u.password_hash, u.name, u.role, u.status,
+                   COALESCE(ARRAY_AGG(c.numero_cliente) FILTER (WHERE c.numero_cliente IS NOT NULL), '{}') AS client_numbers
+            FROM portal_users u
+            LEFT JOIN portal_user_clients c ON c.user_id = u.id
+            WHERE u.status = 'Activo'
+            GROUP BY u.id
+            ORDER BY u.id
+            """
+        )
+        accounts = [dict(row) for row in cursor.fetchall()]
+        connection.commit()
+        return accounts
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao consultar a base de dados de utilizadores")
+        raise
+    finally:
+        if connection is not None:
+            connection.close()
+
+
 def current_user():
+    accounts = load_user_accounts()
+    user_id = session.get("user_id")
+    if user_id is not None:
+        for account in accounts:
+            if str(account.get("id")) == str(user_id):
+                return account
     user_index = session.get("user_index", 0)
-    if not isinstance(user_index, int) or not 0 <= user_index < len(client_accounts):
-        return client_accounts[0]
-    return client_accounts[user_index]
+    if isinstance(user_index, int) and 0 <= user_index < len(accounts):
+        return accounts[user_index]
+    return accounts[0]
 
 
 def current_allowed_client_numbers():
@@ -199,17 +278,56 @@ def current_allowed_client_numbers():
 
 
 def portal_users_for_page():
+    accounts = load_user_accounts()
+    current_id = str(session.get("user_id", ""))
     return [
         {
             "name": account["name"],
             "email": account["email"],
             "role": account["role"],
             "status": "Activo",
-            "last_access": "Acesso actual" if index == session.get("user_index", 0) else "—",
+            "last_access": "Acesso actual" if str(account.get("id", index)) == current_id else "—",
             "client_numbers": account["client_numbers"] or CLIENT_ALLOWED_NUMBERS,
         }
-        for index, account in enumerate(client_accounts)
+        for index, account in enumerate(accounts)
     ]
+
+
+def create_portal_user(email, password, name, role, client_numbers):
+    if not DATABASE_URL:
+        return False, "Configure DATABASE_URL para guardar novos utilizadores."
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO portal_users (email, password_hash, name, role)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+            """,
+            (email, generate_password_hash(password), name, role),
+        )
+        user_id = cursor.fetchone()[0]
+        for number in client_numbers:
+            cursor.execute(
+                "INSERT INTO portal_user_clients (user_id, numero_cliente) VALUES (%s, %s)",
+                (user_id, number),
+            )
+        connection.commit()
+        return True, "Utilizador criado e associado aos clientes indicados."
+    except psycopg2.errors.UniqueViolation:
+        if connection is not None:
+            connection.rollback()
+        return False, "Já existe um utilizador com esse e-mail."
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao criar utilizador")
+        return False, "Não foi possível guardar o novo utilizador."
+    finally:
+        if connection is not None:
+            connection.close()
 
 
 def external_client_rows(numbers):
@@ -954,10 +1072,11 @@ def login():
     if request.method == "POST":
         verify_csrf()
         email = request.form.get("email", "").strip().lower()
+        accounts = load_user_accounts()
         matching_index = next(
             (
                 index
-                for index, account in enumerate(client_accounts)
+                for index, account in enumerate(accounts)
                 if secrets.compare_digest(email, account["email"])
             ),
             -1,
@@ -990,11 +1109,12 @@ def login_password():
             return redirect(url_for("login_password"))
 
         password = request.form.get("password", "")
+        accounts = load_user_accounts()
         user_index = session.get("login_user_index", -1)
         password_hash = (
-            client_accounts[user_index]["password_hash"]
-            if isinstance(user_index, int) and 0 <= user_index < len(client_accounts)
-            else client_accounts[0]["password_hash"]
+            accounts[user_index]["password_hash"]
+            if isinstance(user_index, int) and 0 <= user_index < len(accounts)
+            else accounts[0]["password_hash"]
         )
         password_matches = check_password_hash(password_hash, password)
 
@@ -1004,7 +1124,7 @@ def login_password():
                 return redirect(url_for("login"))
             session.clear()
             session["logged_in"] = True
-            session["user_index"] = user_index
+            session["user_id"] = accounts[user_index].get("id", user_index)
             session.permanent = True
             clear_login_attempts(key)
             return redirect(url_for("dashboard"))
@@ -1163,9 +1283,31 @@ def perfil():
     return render_template("profile.html", profile=client_profile)
 
 
-@app.route("/utilizadores")
+@app.route("/utilizadores", methods=["GET", "POST"])
 @login_required
 def utilizadores():
+    if request.method == "POST":
+        verify_csrf()
+        if current_user().get("role") != "Administrador":
+            abort(403)
+        email = request.form.get("email", "").strip().lower()
+        name = request.form.get("name", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "Utilizador").strip() or "Utilizador"
+        client_numbers = sorted(
+            {
+                value.strip()
+                for value in request.form.get("client_numbers", "").replace(";", ",").split(",")
+                if value.strip()
+            }
+        )
+        if not email or not name or len(password) < 12 or not client_numbers:
+            flash("Indique nome, e-mail, palavra-passe com 12 caracteres e pelo menos um cliente.", "error")
+        else:
+            created, message = create_portal_user(email, password, name, role, client_numbers)
+            flash(message, "success" if created else "error")
+        return redirect(url_for("utilizadores"))
+
     users = portal_users_for_page()
     if current_user().get("role") != "Administrador":
         users = [users[session.get("user_index", 0)]]
@@ -1181,6 +1323,8 @@ def utilizadores():
         users=users,
         active_count=sum(user["status"] == "Activo" for user in users),
         clients=external_client_rows(associated_numbers),
+        can_manage=current_user().get("role") == "Administrador" and bool(DATABASE_URL),
+        current_user_role=current_user().get("role"),
         profile=client_profile,
     )
 

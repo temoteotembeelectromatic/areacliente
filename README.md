@@ -46,6 +46,7 @@ SECRET_KEY
 CLIENT_EMAIL
 CLIENT_PASSWORD_HASH
 CLIENT_USER_ACCOUNTS_JSON
+DATABASE_URL
 CONTROLLER_LEGAL_NAME
 CONTROLLER_ADDRESS
 PRIVACY_EMAIL
@@ -72,7 +73,7 @@ Para associar vários utilizadores aos respectivos clientes, configure `CLIENT_U
 [{"email":"utilizador@cliente.pt","password_hash":"HASH_GERADO_COM_WERKZEUG","name":"Nome do utilizador","role":"Utilizador","client_numbers":["6917","7024"]}]
 ```
 
-O utilizador autenticado só consulta equipamentos, intervenções e checklists cujo `numero_cliente` esteja na sua lista. A página `/utilizadores` mostra essa associação em modo apenas de leitura; alterações aos acessos devem ser feitas pelo responsável da aplicação.
+O utilizador autenticado só consulta equipamentos, intervenções e checklists cujo `numero_cliente` esteja na sua lista. A página `/utilizadores` permite ao administrador criar acessos e associar clientes, gravando apenas na `DATABASE_URL`. A `DATABASE_URL_2` mantém-se exclusivamente de leitura.
 
 Para testes locais em HTTP, defina tambem `SESSION_COOKIE_SECURE=false`.
 

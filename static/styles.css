@@ -1151,6 +1151,51 @@ select:focus {
   font-weight: 800;
 }
 
+.user-create-panel {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 18px;
+  border-top: 3px solid var(--brand);
+}
+
+.user-create-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.user-create-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.user-create-form input,
+.user-create-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  padding: 11px 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.user-create-wide {
+  grid-column: span 2;
+}
+
+.user-create-submit {
+  align-self: end;
+  border: 0;
+  color: #171717;
+}
+
+.writable-badge {
+  border-color: var(--brand);
+}
+
 .clients-panel {
   margin-top: 18px;
 }
@@ -1474,6 +1519,14 @@ textarea:focus {
 
   .users-note a {
     margin-left: 0;
+  }
+
+  .user-create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .user-create-wide {
+    grid-column: auto;
   }
 
 }

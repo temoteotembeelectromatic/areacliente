@@ -10,6 +10,26 @@
     <a class="filter-submit users-request-link" href="{{ url_for('apoio') }}">Pedir novo acesso</a>
   </header>
 
+  {% if can_manage %}
+    <section class="panel user-create-panel">
+      <div class="users-panel-heading">
+        <div><h2>Atribuir novo acesso</h2><p>O novo utilizador ficará limitado aos números de cliente indicados.</p></div>
+        <span class="readonly-badge writable-badge">Base de utilizadores</span>
+      </div>
+      <form method="post" class="user-create-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Nome<input name="name" required maxlength="120" autocomplete="name"></label>
+        <label>E-mail<input type="email" name="email" required maxlength="254" autocomplete="email"></label>
+        <label>Palavra-passe temporária<input type="password" name="password" required minlength="12" autocomplete="new-password"></label>
+        <label>Perfil<select name="role"><option>Utilizador</option><option>Administrador</option></select></label>
+        <label class="user-create-wide">Números de cliente separados por vírgulas<input name="client_numbers" required placeholder="6917, 7024"></label>
+        <button class="filter-submit user-create-submit" type="submit">Criar acesso</button>
+      </form>
+    </section>
+  {% elif current_user_role|default('') == 'Administrador' and not can_manage %}
+    <section class="users-note"><strong>Gestão de acessos indisponível.</strong><span>Configure DATABASE_URL para guardar utilizadores sem escrever na base de dados de consulta.</span></section>
+  {% endif %}
+
   <section class="users-overview">
     <div><span>Utilizadores activos</span><strong>{{ active_count }}</strong></div>
     <div><span>Total de acessos</span><strong>{{ users|length }}</strong></div>
