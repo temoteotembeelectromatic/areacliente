@@ -87,8 +87,8 @@
         <tbody>
           {% for item in equipment %}
             <tr>
-              <td><strong>{{ item.id }}</strong></td>
-              <td>{{ item.numero_cliente }}</td>
+              <td><strong>Equipamento #{{ item.id }}</strong></td>
+              <td>{{ item.client_name }}<br><small>N.º {{ item.numero_cliente }}</small></td>
               <td>{{ item.numero_contrato }}</td>
               <td>{{ item.type }}</td>
               <td>{{ item.brand }} / {{ item.model }}</td>
@@ -105,7 +105,7 @@
       {% for item in equipment %}
         <article class="equipment-card">
           <div class="equipment-card-topline">
-            <span class="equipment-id">{{ item.id }}</span>
+            <span class="equipment-id">Equipamento #{{ item.id }}</span>
             <span class="status {{ 'status-good' if item.status in ['Operacional', 'Bom'] else 'status-watch' }}">{{ item.status }}</span>
           </div>
           <h2>{{ item.name }}</h2>
@@ -120,7 +120,7 @@
             </div>
           {% endif %}
           <dl class="equipment-details">
-            <div><dt>Cliente</dt><dd>{{ item.numero_cliente }}</dd></div>
+            <div><dt>Cliente</dt><dd>{{ item.client_name }} <small>N.º {{ item.numero_cliente }}</small></dd></div>
             <div><dt>Contrato</dt><dd>{{ item.numero_contrato }}</dd></div>
             <div><dt>Localização</dt><dd>{{ item.location }}</dd></div>
             <div><dt>Garantia</dt><dd>{% if item.in_warranty %}Até {{ item.warranty_until }}{% else %}Sem garantia{% endif %}</dd></div>

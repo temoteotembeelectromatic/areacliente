@@ -827,6 +827,15 @@ select:focus {
   font-weight: 700;
 }
 
+.equipment-details dd small,
+.equipment-table td small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .detail-panel {
   display: grid;
   gap: 24px;

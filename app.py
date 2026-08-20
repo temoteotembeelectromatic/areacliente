@@ -664,7 +664,10 @@ def has_equipment_selection(filters):
 
 
 def demo_equipment_rows(filters):
-    rows = list(equipment)
+    rows = [
+        {**item, "client_name": client_profile["company"]}
+        for item in equipment
+    ]
     allowed_numbers = current_allowed_client_numbers()
     selected_client = filters["cliente"] if filters["cliente"] in allowed_numbers else ""
     if selected_client:
@@ -838,6 +841,12 @@ def external_equipment_rows(filters):
                     row["photos"] = []
         for row in rows:
             row.pop("_db_id", None)
+        client_names = {
+            item["number"]: item["name"]
+            for item in external_client_rows({row["numero_cliente"] for row in rows})
+        }
+        for row in rows:
+            row["client_name"] = client_names.get(row["numero_cliente"], "Cliente não identificado")
         return rows, types, client_numbers, None, source_label
     except Exception:
         app.logger.exception("Falha ao consultar DATABASE_URL_2")
