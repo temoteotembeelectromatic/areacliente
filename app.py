@@ -366,12 +366,14 @@ def find_client_source(cursor):
                     "nome_cliente",
                     "cliente_nome",
                     "nome_fantasia",
+                    "nome_comercial",
+                    "nome_empresa_cliente",
                     "razao_social",
                     "designacao_social",
-                    "nome",
                     "empresa",
                     "designacao",
                     "descricao",
+                    "nome",
                 )
                 if column in columns
             ),
