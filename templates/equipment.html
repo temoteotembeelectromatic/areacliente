@@ -11,13 +11,21 @@
   </header>
 
   <form class="equipment-filters" method="get" data-loading-form data-loading-text="A carregar...">
-    <label class="search-field">
-      <span class="sr-only">Pesquisar equipamentos</span>
-      <input type="search" name="q" value="{{ filters.q }}" placeholder="Pesquisar por n.º de equipamento ou n.º de contrato..." autocomplete="off">
+    <div class="equipment-filter-heading">
+      <div>
+        <span class="eyebrow">Pesquisa de ativos</span>
+        <h2>Encontrar equipamento</h2>
+      </div>
+      <span>Pesquise pelo número de equipamento ou contrato.</span>
+    </div>
+
+    <label class="search-field equipment-search-field">
+      <span>Equipamento ou contrato</span>
+      <input type="search" name="q" value="{{ filters.q }}" placeholder="Ex.: 10563 ou 5441" autocomplete="off">
     </label>
 
-    <div class="filter-selects">
-      <label>
+    <div class="equipment-filter-row">
+      <label class="equipment-type-field">
         Tipo de equipamento
         <select name="tipo">
           <option value="">Todos os tipos</option>
@@ -31,13 +39,22 @@
       <button class="filter-submit" type="submit">Procurar</button>
     </div>
 
-    <div class="filter-actions" aria-label="Filtros rápidos">
-      <a class="filter-chip {% if not filters.garantia %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, vista=filters.vista) }}">Todos</a>
-      <a class="filter-chip {% if filters.garantia == '1' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia='1', vista=filters.vista) }}">Em garantia</a>
-      <a class="filter-chip {% if filters.garantia == '0' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia='0', vista=filters.vista) }}">Sem garantia</a>
-      <span class="filter-divider"></span>
-      <a class="filter-chip {% if filters.vista == 'cartoes' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia=filters.garantia, vista='cartoes') }}">Cartões</a>
-      <a class="filter-chip {% if filters.vista == 'tabela' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia=filters.garantia, vista='tabela') }}">Tabela</a>
+    <div class="equipment-filter-options">
+      <div class="filter-option-group" aria-label="Filtro de garantia">
+        <span>Garantia</span>
+        <div class="filter-actions">
+          <a class="filter-chip {% if not filters.garantia %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, vista=filters.vista) }}">Todos</a>
+          <a class="filter-chip {% if filters.garantia == '1' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia='1', vista=filters.vista) }}">Em garantia</a>
+          <a class="filter-chip {% if filters.garantia == '0' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia='0', vista=filters.vista) }}">Sem garantia</a>
+        </div>
+      </div>
+      <div class="filter-option-group" aria-label="Modo de visualização">
+        <span>Visualização</span>
+        <div class="filter-actions">
+          <a class="filter-chip {% if filters.vista == 'cartoes' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia=filters.garantia, vista='cartoes') }}">Cartões</a>
+          <a class="filter-chip {% if filters.vista == 'tabela' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia=filters.garantia, vista='tabela') }}">Tabela</a>
+        </div>
+      </div>
     </div>
   </form>
 
