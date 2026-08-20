@@ -3,24 +3,46 @@
 {% block content %}
   <header class="page-header">
     <div>
-      <span class="eyebrow">Conta</span>
-      <h1>Perfil do cliente</h1>
-      <p>Informação principal associada ao acesso.</p>
+      <span class="eyebrow">A sua conta</span>
+      <h1>Perfil e acessos</h1>
+      <p>Consulte os dados da sua conta e o âmbito de acesso atribuído.</p>
     </div>
   </header>
 
+  <section class="summary-grid profile-summary-grid">
+    <article class="summary-card neutral">
+      <span>Perfil de acesso</span>
+      <strong>{{ user_role }}</strong>
+    </article>
+    <article class="summary-card success">
+      <span>Clientes associados</span>
+      <strong>{{ clients|length }}</strong>
+    </article>
+    <article class="summary-card warning">
+      <span>Contratos associados</span>
+      <strong>{{ contracts|length }}</strong>
+    </article>
+  </section>
+
   <section class="panel profile-panel">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Dados de acesso</span>
+        <h2>Conta</h2>
+      </div>
+    </div>
+    <div class="profile-details">
     <div>
       <span>Nome</span>
       <strong>{{ profile.name }}</strong>
     </div>
     <div>
-      <span>Empresa</span>
-      <strong>{{ profile.company }}</strong>
-    </div>
-    <div>
       <span>E-mail</span>
       <strong>{{ profile.email }}</strong>
+    </div>
+    <div>
+      <span>Perfil</span>
+      <strong>{{ user_role }}</strong>
     </div>
     <div>
       <span>Telefone</span>
@@ -30,5 +52,37 @@
       <span>Gestor de conta</span>
       <strong>{{ profile.account_manager }}</strong>
     </div>
+    </div>
+  </section>
+
+  <section class="dashboard-contracts profile-access-panel">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Âmbito de acesso</span>
+        <h2>Clientes e contratos associados</h2>
+      </div>
+      <a href="{{ url_for('documentos') }}">Ver documentos</a>
+    </div>
+    {% if clients %}
+      <div class="profile-client-list">
+        {% for client in clients %}
+          <article class="profile-client-item">
+            <div>
+              <span>Cliente {{ client.number }}</span>
+              <strong>{{ client.name }}</strong>
+            </div>
+            <div class="profile-contract-links">
+              {% for contract in contracts if contract.client_number == client.number %}
+                <a href="{{ url_for('documentos_contrato', contract_number=contract.number) }}">Contrato {{ contract.number }}</a>
+              {% else %}
+                <span>Sem contratos atribuídos</span>
+              {% endfor %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="panel-copy">Não existem clientes associados a esta conta.</p>
+    {% endif %}
   </section>
 {% endblock %}

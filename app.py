@@ -1669,7 +1669,19 @@ def apoio():
 @app.route("/perfil")
 @login_required
 def perfil():
-    return render_template("profile.html", profile=client_profile)
+    user = current_user()
+    clients = external_client_rows(current_allowed_client_numbers())
+    contracts = relevant_contracts()
+    profile = dict(client_profile)
+    profile["name"] = user.get("name") or client_profile["name"]
+    profile["email"] = user.get("email") or client_profile["email"]
+    return render_template(
+        "profile.html",
+        profile=profile,
+        user_role=user.get("role", "Utilizador"),
+        clients=clients,
+        contracts=contracts,
+    )
 
 
 @app.route("/utilizadores", methods=["GET", "POST"])
