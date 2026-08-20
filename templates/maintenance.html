@@ -1,21 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <header class="page-header">
+  <header class="page-header maintenance-page-header">
     <div>
       <span class="eyebrow">Intervenções</span>
-      <h1>Manutenção</h1>
-      <p>Consulte o histórico de intervenções do equipamento seleccionado.</p>
+      <h1>Histórico de manutenção</h1>
+      <p>Consulte intervenções, trabalhos realizados e fotografias por equipamento autorizado.</p>
     </div>
+    <span class="readonly-badge">Apenas leitura</span>
   </header>
 
-  <form class="equipment-filters maintenance-filters" method="get" data-loading-form data-loading-text="A carregar...">
-    <label>
-      Equipamento
+  <form class="maintenance-selector" method="get" data-loading-form data-loading-text="A carregar...">
+    <div class="maintenance-selector-heading">
+      <div>
+        <span class="eyebrow">Equipamentos autorizados</span>
+        <h2>Seleccione o equipamento</h2>
+      </div>
+      <span>O histórico é apresentado apenas para o equipamento escolhido.</span>
+    </div>
+    <label class="maintenance-select-field">
+      Equipamento e contrato
       <select name="equipamento" required>
         <option value="">Seleccione um equipamento</option>
-        {% for number in equipment_numbers %}
-          <option value="{{ number }}" {% if selected_equipment == number %}selected{% endif %}>{{ number }}</option>
+        {% for item in equipment_options %}
+          <option value="{{ item.number }}" {% if selected_equipment == item.number %}selected{% endif %}>Equipamento #{{ item.number }} · {{ item.type }} · Contrato {{ item.contract }}</option>
         {% endfor %}
       </select>
     </label>
@@ -38,24 +46,35 @@
       <p>Não existem intervenções associadas a este equipamento.</p>
     </section>
   {% else %}
-    <section class="panel">
-      <div class="equipment-results-meta">
-        <strong>{{ maintenance|length }} intervenção{% if maintenance|length != 1 %}s{% endif %}</strong>
-        <span>Equipamento {{ selected_equipment }}</span>
+    <section class="maintenance-summary">
+      <div><span>Equipamento</span><strong>Equipamento #{{ selected_equipment }}</strong></div>
+      <div><span>Contrato</span><strong>{{ selected_option.contract if selected_option else '-' }}</strong></div>
+      <div><span>Intervenções</span><strong>{{ maintenance|length }}</strong></div>
+      <div><span>Localização</span><strong>{{ selected_option.location if selected_option else '-' }}</strong></div>
+    </section>
+
+    <section class="maintenance-history">
+      <div class="maintenance-history-heading">
+        <div>
+          <span class="eyebrow">Registos concluídos</span>
+          <h2>Intervenções registadas</h2>
+        </div>
+        <span>{{ maintenance|length }} registo{% if maintenance|length != 1 %}s{% endif %}</span>
       </div>
       {% for item in maintenance %}
-        <article class="row-item wide maintenance-item">
-          <div>
-            <strong>{{ item.title }}</strong>
-            <span>{{ item.id }} · {{ item.intervention_type or 'Intervenção' }} · Contrato {{ item.contract }} · {{ item.location }}</span>
+        <article class="maintenance-record">
+          <div class="maintenance-record-date">{{ item.date }}</div>
+          <div class="maintenance-record-main">
+            <div class="maintenance-record-topline">
+              <span class="maintenance-record-id">Intervenção #{{ item.id }}</span>
+              <span class="status {{ 'status-watch' if item.status not in ['Concluída', 'Concluida'] else 'status-good' }}">{{ item.status }}</span>
+            </div>
+            <h3>{{ item.intervention_type or 'Intervenção' }}</h3>
+            <p>{{ item.title }}</p>
+            <span>Contrato {{ item.contract }} · {{ item.location }} · Técnico: {{ item.technician }}</span>
             {% if item.work_done %}<p>{{ item.work_done }}</p>{% endif %}
           </div>
-          <div class="row-meta">
-            <small>{{ item.date }}</small>
-            <span class="status {{ 'status-watch' if item.status not in ['Concluída', 'ConcluÃ­da', 'Concluida'] else 'status-good' }}">{{ item.status }}</span>
-            <small>{{ item.technician }}</small>
-            <a href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhes</a>
-          </div>
+          <a class="contract-detail-link" href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhe</a>
         </article>
       {% endfor %}
     </section>

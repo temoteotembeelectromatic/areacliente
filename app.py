@@ -893,7 +893,17 @@ def external_equipment_rows(filters):
 
 def external_maintenance_history(selected_equipment):
     if not DATABASE_URL_2:
-        equipment_numbers = sorted(row["id"] for row in equipment)
+        allowed_numbers = current_allowed_client_numbers()
+        equipment_options = [
+            {
+                "number": row["id"],
+                "type": row["type"],
+                "contract": row["numero_contrato"],
+                "location": row["location"],
+            }
+            for row in equipment
+            if not allowed_numbers or row["numero_cliente"] in allowed_numbers
+        ]
         rows = [
             {
                 "id": item["id"],
@@ -909,7 +919,7 @@ def external_maintenance_history(selected_equipment):
             if item["equipment"] == selected_equipment
             and item["status"].casefold() not in {"serviço delegado", "servico delegado"}
         ] if selected_equipment else []
-        return equipment_numbers, rows
+        return equipment_options, rows
 
     connection = None
     try:
@@ -921,35 +931,41 @@ def external_maintenance_history(selected_equipment):
         connection.set_session(readonly=True, autocommit=False)
         cursor = connection.cursor(cursor_factory=RealDictCursor)
 
-        scope_clause = ""
-        scope_params = []
         allowed_numbers = current_allowed_client_numbers()
+        scope_clause = "WHERE TRIM(COALESCE(numero_equipamento, '')) <> ''"
+        scope_params = []
         if allowed_numbers:
-            scope_clause = "WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"
+            scope_clause += " AND TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"
             scope_params.append(allowed_numbers)
 
         cursor.execute(
             f"""
-            SELECT DISTINCT TRIM(COALESCE(numero_equipamento, '')) AS numero_equipamento
+            SELECT DISTINCT ON (TRIM(COALESCE(numero_equipamento, '')))
+                TRIM(COALESCE(numero_equipamento, '')) AS numero_equipamento,
+                COALESCE(NULLIF(TRIM(tipo_equipamento), ''), 'Sem tipo') AS tipo_equipamento,
+                COALESCE(NULLIF(TRIM(numero_contrato), ''), '-') AS numero_contrato,
+                COALESCE(NULLIF(TRIM(posicao), ''), '-') AS posicao
             FROM registo_equipamentos
             {scope_clause}
-              AND TRIM(COALESCE(numero_equipamento, '')) <> ''
-            ORDER BY numero_equipamento
-            LIMIT 500
-            """ if scope_clause else """
-            SELECT DISTINCT TRIM(COALESCE(numero_equipamento, '')) AS numero_equipamento
-            FROM registo_equipamentos
-            WHERE TRIM(COALESCE(numero_equipamento, '')) <> ''
-            ORDER BY numero_equipamento
+            ORDER BY TRIM(COALESCE(numero_equipamento, '')), id DESC
             LIMIT 500
             """,
             scope_params,
         )
-        equipment_numbers = [row["numero_equipamento"] for row in cursor.fetchall()]
+        equipment_options = [
+            {
+                "number": row["numero_equipamento"],
+                "type": row["tipo_equipamento"],
+                "contract": row["numero_contrato"],
+                "location": row["posicao"],
+            }
+            for row in cursor.fetchall()
+        ]
+        equipment_numbers = [row["number"] for row in equipment_options]
         if not selected_equipment:
-            return equipment_numbers, None
+            return equipment_options, None
         if selected_equipment not in equipment_numbers:
-            return equipment_numbers, "O equipamento seleccionado não está disponível para esta conta."
+            return equipment_options, "O equipamento seleccionado não está disponível para esta conta."
 
         cursor.execute(
             """
@@ -1032,7 +1048,7 @@ def external_maintenance_history(selected_equipment):
         except Exception:
             app.logger.exception("Falha ao consultar relatórios de intervenção")
             connection.rollback()
-        return equipment_numbers, rows
+        return equipment_options, rows
     except Exception:
         app.logger.exception("Falha ao consultar histórico de manutenção")
         return [], "Não foi possível consultar o histórico de manutenção neste momento."
@@ -1402,13 +1418,18 @@ def equipamentos():
 @login_required
 def manutencao():
     selected_equipment = request.args.get("equipamento", "").strip()[:100]
-    equipment_numbers, history = external_maintenance_history(selected_equipment)
+    equipment_options, history = external_maintenance_history(selected_equipment)
     error = history if isinstance(history, str) else None
     rows = [] if error else (history or [])
+    selected_option = next(
+        (item for item in equipment_options if item["number"] == selected_equipment),
+        None,
+    )
     return render_template(
         "maintenance.html",
         maintenance=rows,
-        equipment_numbers=equipment_numbers,
+        equipment_options=equipment_options,
+        selected_option=selected_option,
         selected_equipment=selected_equipment,
         error=error,
     )
