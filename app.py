@@ -1487,6 +1487,11 @@ def dashboard():
     visible_equipment, equipment_total, contracts = dashboard_equipment_context()
     visible_equipment_ids = {item["id"] for item in visible_equipment}
     client_total = len({item["client_number"] for item in contracts})
+    dashboard_profile = dict(client_profile)
+    if len(contracts) == 1:
+        dashboard_profile["company"] = contracts[0]["client_name"]
+    elif len(contracts) > 1:
+        dashboard_profile["company"] = "Área de cliente Electromatic"
     cards = [
         {"label": "Equipamentos associados", "value": equipment_total, "tone": "neutral"},
         {"label": "Contratos associados", "value": len(contracts), "tone": "success"},
@@ -1495,7 +1500,7 @@ def dashboard():
     ]
     return render_template(
         "dashboard.html",
-        profile=client_profile,
+        profile=dashboard_profile,
         cards=cards,
         contracts=contracts,
         equipment=visible_equipment,
