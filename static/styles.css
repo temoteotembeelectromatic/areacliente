@@ -1151,6 +1151,37 @@ select:focus {
   font-weight: 800;
 }
 
+.clients-panel {
+  margin-top: 18px;
+}
+
+.clients-table-wrap {
+  overflow-x: auto;
+}
+
+.clients-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.clients-table th,
+.clients-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.clients-table th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.clients-table tr:last-child td {
+  border-bottom: 0;
+}
+
 .checklist-results {
   display: grid;
   gap: 14px;

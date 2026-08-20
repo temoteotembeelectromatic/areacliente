@@ -1,3 +1,4 @@
+import json
 import os
 import secrets
 import time
@@ -44,6 +45,50 @@ CLIENT_ALLOWED_NUMBERS = [
     for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
     if value.strip()
 ]
+
+CLIENT_USER_ACCOUNTS_JSON = os.environ.get("CLIENT_USER_ACCOUNTS_JSON", "").strip()
+client_accounts = []
+if CLIENT_USER_ACCOUNTS_JSON:
+    try:
+        raw_accounts = json.loads(CLIENT_USER_ACCOUNTS_JSON)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("CLIENT_USER_ACCOUNTS_JSON deve conter JSON válido.") from error
+    if not isinstance(raw_accounts, list) or not raw_accounts:
+        raise RuntimeError("CLIENT_USER_ACCOUNTS_JSON deve ser uma lista com pelo menos um utilizador.")
+    for raw_account in raw_accounts:
+        if not isinstance(raw_account, dict):
+            raise RuntimeError("Cada utilizador em CLIENT_USER_ACCOUNTS_JSON deve ser um objecto.")
+        email = str(raw_account.get("email", "")).strip().lower()
+        password_hash = str(raw_account.get("password_hash", "")).strip()
+        client_numbers = [
+            str(value).strip()
+            for value in raw_account.get("client_numbers", [])
+            if str(value).strip()
+        ]
+        if not email or not password_hash or not client_numbers:
+            raise RuntimeError(
+                "Cada utilizador deve ter email, password_hash e pelo menos um client_number."
+            )
+        client_accounts.append(
+            {
+                "email": email,
+                "password_hash": password_hash,
+                "client_numbers": client_numbers,
+                "name": str(raw_account.get("name") or email),
+                "role": str(raw_account.get("role") or "Utilizador"),
+            }
+        )
+else:
+    client_accounts = [
+        {
+            "email": CLIENT_EMAIL,
+            "password_hash": CLIENT_PASSWORD_HASH,
+            "client_numbers": CLIENT_ALLOWED_NUMBERS,
+            "name": "Administrador do contrato",
+            "role": "Administrador",
+        }
+    ]
+
 if not DATABASE_URL_2 and not CLIENT_ALLOWED_NUMBERS:
     CLIENT_ALLOWED_NUMBERS = ["TESTE-001"]
 
@@ -53,11 +98,13 @@ if not DATABASE_URL_2 and not CLIENT_ALLOWED_NUMBERS:
 equipment_test_default = "true" if DATABASE_URL_2 and not CLIENT_ALLOWED_NUMBERS else "false"
 EQUIPMENT_TEST_MODE = os.environ.get("EQUIPMENT_TEST_MODE", equipment_test_default).lower() == "true"
 
-if not CLIENT_EMAIL:
-    raise RuntimeError("CLIENT_EMAIL tem de estar definido nas variaveis de ambiente.")
-
-if not CLIENT_PASSWORD_HASH:
-    raise RuntimeError("CLIENT_PASSWORD_HASH tem de estar definido nas variaveis de ambiente.")
+if not client_accounts or any(
+    not account["email"] or not account["password_hash"]
+    for account in client_accounts
+):
+    raise RuntimeError(
+        "Defina CLIENT_EMAIL e CLIENT_PASSWORD_HASH, ou uma lista válida em CLIENT_USER_ACCOUNTS_JSON."
+    )
 
 if not all((CONTROLLER_LEGAL_NAME, CONTROLLER_ADDRESS, PRIVACY_EMAIL)):
     raise RuntimeError(
@@ -137,15 +184,101 @@ requests_list = [
     {"id": "SUP-1008", "subject": "Atualização de contactos", "status": "Resolvido", "date": "2026-08-09"},
 ]
 
-portal_users = [
-    {
-        "name": "Administrador do contrato",
-        "email": CLIENT_EMAIL,
-        "role": "Administrador",
-        "status": "Activo",
-        "last_access": "Acesso actual",
-    }
-]
+def current_user():
+    user_index = session.get("user_index", 0)
+    if not isinstance(user_index, int) or not 0 <= user_index < len(client_accounts):
+        return client_accounts[0]
+    return client_accounts[user_index]
+
+
+def current_allowed_client_numbers():
+    user_numbers = current_user().get("client_numbers", [])
+    if user_numbers:
+        return user_numbers
+    return CLIENT_ALLOWED_NUMBERS
+
+
+def portal_users_for_page():
+    return [
+        {
+            "name": account["name"],
+            "email": account["email"],
+            "role": account["role"],
+            "status": "Activo",
+            "last_access": "Acesso actual" if index == session.get("user_index", 0) else "—",
+            "client_numbers": account["client_numbers"] or CLIENT_ALLOWED_NUMBERS,
+        }
+        for index, account in enumerate(client_accounts)
+    ]
+
+
+def external_client_rows(numbers):
+    numbers = list(numbers)
+    if not numbers:
+        return []
+    if not DATABASE_URL_2:
+        return [{"number": number, "name": "Cliente de teste"} for number in numbers]
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'clientes'
+            """
+        )
+        columns = {row["column_name"] for row in cursor.fetchall()}
+        number_column = next(
+            (column for column in ("numero_cliente", "numero", "id") if column in columns),
+            None,
+        )
+        name_column = next(
+            (column for column in ("nome_empresa", "nome", "empresa", "designacao") if column in columns),
+            None,
+        )
+        if not number_column:
+            return [{"number": number, "name": "Cliente associado"} for number in numbers]
+        name_expression = (
+            f"COALESCE(NULLIF(TRIM(COALESCE({name_column}, '')), ''), CAST({number_column} AS TEXT))"
+            if name_column
+            else f"CAST({number_column} AS TEXT)"
+        )
+        cursor.execute(
+            f"""
+            SELECT TRIM(CAST({number_column} AS TEXT)) AS number,
+                   {name_expression} AS name
+            FROM clientes
+            WHERE TRIM(CAST({number_column} AS TEXT)) = ANY(%s)
+            ORDER BY number
+            """,
+            (numbers,),
+        )
+        rows = [
+            {"number": row["number"], "name": row["name"] or "Cliente associado"}
+            for row in cursor.fetchall()
+        ]
+        known_numbers = {row["number"] for row in rows}
+        rows.extend(
+            {"number": number, "name": "Cliente associado"}
+            for number in numbers
+            if number not in known_numbers
+        )
+        return rows
+    except Exception:
+        app.logger.exception("Falha ao consultar a tabela de clientes")
+        return [{"number": number, "name": "Cliente associado"} for number in numbers]
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
 
 
 def login_required(view):
@@ -256,7 +389,8 @@ def has_equipment_selection(filters):
 
 def demo_equipment_rows(filters):
     rows = list(equipment)
-    selected_client = filters["cliente"] if filters["cliente"] in CLIENT_ALLOWED_NUMBERS else ""
+    allowed_numbers = current_allowed_client_numbers()
+    selected_client = filters["cliente"] if filters["cliente"] in allowed_numbers else ""
     if selected_client:
         rows = [row for row in rows if row["numero_cliente"] == selected_client]
     if filters["tipo"]:
@@ -283,7 +417,8 @@ def demo_equipment_rows(filters):
 def external_equipment_rows(filters):
     if not DATABASE_URL_2:
         return demo_equipment_rows(filters)
-    if not CLIENT_ALLOWED_NUMBERS and not EQUIPMENT_TEST_MODE:
+    allowed_numbers = current_allowed_client_numbers()
+    if not allowed_numbers and not EQUIPMENT_TEST_MODE:
         return [], [], [], "Não existem números de cliente autorizados para esta conta.", "Base de dados externa"
 
     connection = None
@@ -298,9 +433,9 @@ def external_equipment_rows(filters):
 
         scope_clause = ""
         scope_params = []
-        if CLIENT_ALLOWED_NUMBERS:
+        if allowed_numbers:
             scope_clause = "WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"
-            scope_params.append(CLIENT_ALLOWED_NUMBERS)
+            scope_params.append(allowed_numbers)
 
         cursor.execute(
             f"""
@@ -335,9 +470,9 @@ def external_equipment_rows(filters):
 
         clauses = []
         params = []
-        if CLIENT_ALLOWED_NUMBERS:
+        if allowed_numbers:
             clauses.append("TRIM(COALESCE(numero_cliente, '')) = ANY(%s)")
-            params.append(CLIENT_ALLOWED_NUMBERS)
+            params.append(allowed_numbers)
         if selected_client:
             clauses.append("TRIM(COALESCE(numero_cliente, '')) = %s")
             params.append(selected_client)
@@ -469,9 +604,10 @@ def external_maintenance_history(selected_equipment):
 
         scope_clause = ""
         scope_params = []
-        if CLIENT_ALLOWED_NUMBERS:
+        allowed_numbers = current_allowed_client_numbers()
+        if allowed_numbers:
             scope_clause = "WHERE TRIM(COALESCE(numero_cliente, '')) = ANY(%s)"
-            scope_params.append(CLIENT_ALLOWED_NUMBERS)
+            scope_params.append(allowed_numbers)
 
         cursor.execute(
             f"""
@@ -616,9 +752,10 @@ def maintenance_detail(intervention_id):
         cursor = connection.cursor(cursor_factory=RealDictCursor)
         scope_clause = ""
         params = [int(intervention_id)]
-        if CLIENT_ALLOWED_NUMBERS:
+        allowed_numbers = current_allowed_client_numbers()
+        if allowed_numbers:
             scope_clause = "AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)"
-            params.append(CLIENT_ALLOWED_NUMBERS)
+            params.append(allowed_numbers)
         cursor.execute(
             f"""
             SELECT c.*, e.tipo_equipamento, e.marca, e.modelo, e.numero_cliente
@@ -747,7 +884,8 @@ def validated_checklists(contract, start_date, end_date):
         cursor = connection.cursor(cursor_factory=RealDictCursor)
         params = [contract, start_date, end_date]
         scope_clause = ""
-        if CLIENT_ALLOWED_NUMBERS:
+        allowed_numbers = current_allowed_client_numbers()
+        if allowed_numbers:
             scope_clause = """
               AND EXISTS (
                 SELECT 1 FROM registo_equipamentos e
@@ -755,7 +893,7 @@ def validated_checklists(contract, start_date, end_date):
                   AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)
               )
             """
-            params.append(CLIENT_ALLOWED_NUMBERS)
+            params.append(allowed_numbers)
         cursor.execute(
             f"""
             SELECT c.id, c.tipo_checklist, c.data_checklist, c.numero_contrato,
@@ -816,11 +954,21 @@ def login():
     if request.method == "POST":
         verify_csrf()
         email = request.form.get("email", "").strip().lower()
-        # Store only the outcome, never the email address, in the browser session.
-        session["login_email_matches"] = secrets.compare_digest(email, CLIENT_EMAIL)
+        matching_index = next(
+            (
+                index
+                for index, account in enumerate(client_accounts)
+                if secrets.compare_digest(email, account["email"])
+            ),
+            -1,
+        )
+        # Store only the outcome and internal account index, never the email address.
+        session["login_email_matches"] = matching_index >= 0
+        session["login_user_index"] = matching_index
         return redirect(url_for("login_password"))
 
     session.pop("login_email_matches", None)
+    session.pop("login_user_index", None)
     return render_template("login.html")
 
 
@@ -842,7 +990,13 @@ def login_password():
             return redirect(url_for("login_password"))
 
         password = request.form.get("password", "")
-        password_matches = check_password_hash(CLIENT_PASSWORD_HASH, password)
+        user_index = session.get("login_user_index", -1)
+        password_hash = (
+            client_accounts[user_index]["password_hash"]
+            if isinstance(user_index, int) and 0 <= user_index < len(client_accounts)
+            else client_accounts[0]["password_hash"]
+        )
+        password_matches = check_password_hash(password_hash, password)
 
         if email_matches and password_matches:
             if not is_contract_active():
@@ -850,6 +1004,7 @@ def login_password():
                 return redirect(url_for("login"))
             session.clear()
             session["logged_in"] = True
+            session["user_index"] = user_index
             session.permanent = True
             clear_login_attempts(key)
             return redirect(url_for("dashboard"))
@@ -871,12 +1026,18 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    allowed_numbers = current_allowed_client_numbers()
+    visible_equipment = [
+        item for item in equipment
+        if not allowed_numbers or item["numero_cliente"] in allowed_numbers
+    ]
+    visible_equipment_ids = {item["id"] for item in visible_equipment}
     return render_template(
         "dashboard.html",
         profile=client_profile,
         cards=summary_cards,
-        equipment=equipment,
-        maintenance=maintenance,
+        equipment=visible_equipment,
+        maintenance=[item for item in maintenance if item["equipment"] in visible_equipment_ids],
         guides=guides,
         contract_valid_until=CONTRACT_VALID_UNTIL,
     )
@@ -1005,10 +1166,21 @@ def perfil():
 @app.route("/utilizadores")
 @login_required
 def utilizadores():
+    users = portal_users_for_page()
+    if current_user().get("role") != "Administrador":
+        users = [users[session.get("user_index", 0)]]
+    associated_numbers = sorted(
+        {
+            number
+            for user in users
+            for number in user["client_numbers"]
+        }
+    )
     return render_template(
         "users.html",
-        users=portal_users,
-        active_count=sum(user["status"] == "Activo" for user in portal_users),
+        users=users,
+        active_count=sum(user["status"] == "Activo" for user in users),
+        clients=external_client_rows(associated_numbers),
         profile=client_profile,
     )
 

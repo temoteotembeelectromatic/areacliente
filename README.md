@@ -9,6 +9,7 @@ Portal inicial em Flask para uma área reservada de cliente.
 - Histórico de manutenção corretiva e preventiva com checklists e relatórios.
 - Download de PDFs individuais ou num único ficheiro conjunto.
 - Contacto com gestor de contrato e assistente de orientação inicial.
+- Gestão de utilizadores com associação explícita a números de cliente.
 
 ## Base de dados externa de equipamentos
 
@@ -21,7 +22,7 @@ DATABASE_URL_2=postgresql://...
 EQUIPMENT_TEST_MODE=true
 ```
 
-Em modo de teste, todos os números de cliente existentes ficam disponíveis no seletor. Antes de produção, defina `EQUIPMENT_TEST_MODE=false` e configure `CLIENT_ALLOWED_NUMBERS=NUMERO_CLIENTE_1,NUMERO_CLIENTE_2` para limitar cada portal aos clientes autorizados. Use na base externa uma credencial PostgreSQL que também tenha apenas permissão `SELECT` sobre `registo_equipamentos`.
+Em modo de teste, todos os números de cliente existentes ficam disponíveis no seletor. Antes de produção, defina `EQUIPMENT_TEST_MODE=false` e configure `CLIENT_USER_ACCOUNTS_JSON` para limitar cada utilizador aos clientes autorizados. `CLIENT_ALLOWED_NUMBERS` continua disponível para a conta única legada. Use na base externa uma credencial PostgreSQL que tenha apenas permissão `SELECT`.
 
 No serviço Render já existente, estas variáveis têm de ser adicionadas manualmente em `Environment`; o `render.yaml` não altera automaticamente as variáveis de um serviço criado anteriormente.
 
@@ -44,6 +45,7 @@ Em produção, define estas variáveis no Render:
 SECRET_KEY
 CLIENT_EMAIL
 CLIENT_PASSWORD_HASH
+CLIENT_USER_ACCOUNTS_JSON
 CONTROLLER_LEGAL_NAME
 CONTROLLER_ADDRESS
 PRIVACY_EMAIL
@@ -63,6 +65,14 @@ python -c "from werkzeug.security import generate_password_hash; print(generate_
 ```
 
 Cole o resultado em `CLIENT_PASSWORD_HASH`. Nunca use `CLIENT_PASSWORD` nem publique uma palavra-passe no repositório.
+
+Para associar vários utilizadores aos respectivos clientes, configure `CLIENT_USER_ACCOUNTS_JSON` no Render. Cada conta deve conter um hash seguro e pelo menos um número de cliente:
+
+```json
+[{"email":"utilizador@cliente.pt","password_hash":"HASH_GERADO_COM_WERKZEUG","name":"Nome do utilizador","role":"Utilizador","client_numbers":["6917","7024"]}]
+```
+
+O utilizador autenticado só consulta equipamentos, intervenções e checklists cujo `numero_cliente` esteja na sua lista. A página `/utilizadores` mostra essa associação em modo apenas de leitura; alterações aos acessos devem ser feitas pelo responsável da aplicação.
 
 Para testes locais em HTTP, defina tambem `SESSION_COOKIE_SECURE=false`.
 

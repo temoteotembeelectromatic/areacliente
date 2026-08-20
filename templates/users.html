@@ -25,12 +25,39 @@
       {% for user in users %}
         <article class="user-row">
           <div class="user-avatar" aria-hidden="true">{{ user.name[:1] }}</div>
-          <div class="user-main"><strong>{{ user.name }}</strong><span>{{ user.email }}</span></div>
+          <div class="user-main">
+            <strong>{{ user.name }}</strong>
+            <span>{{ user.email }}</span>
+            <small>Clientes associados: {{ user.client_numbers|join(", ") }}</small>
+          </div>
           <span class="user-role">{{ user.role }}</span>
           <span class="status status-good">{{ user.status }}</span>
           <small>{{ user.last_access }}</small>
         </article>
       {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel users-panel clients-panel">
+    <div class="users-panel-heading">
+      <div><h2>Clientes associados</h2><p>Estes são os clientes cujos equipamentos e intervenções ficam disponíveis.</p></div>
+      <span class="readonly-badge">Âmbito de acesso</span>
+    </div>
+    <div class="clients-table-wrap">
+      <table class="clients-table">
+        <thead>
+          <tr><th>N.º de cliente</th><th>Cliente</th><th>Acesso</th></tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+            <tr>
+              <td><strong>{{ client.number }}</strong></td>
+              <td>{{ client.name }}</td>
+              <td><span class="status status-good">Equipamentos e manutenção</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 

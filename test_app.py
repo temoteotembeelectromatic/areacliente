@@ -77,6 +77,8 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertEqual(users_page.status_code, 200)
         self.assertIn("Gestão de utilizadores", users_html)
         self.assertIn("Acessos autorizados", users_html)
+        self.assertIn("Clientes associados", users_html)
+        self.assertIn("TESTE-001", users_html)
         self.assertIn("Apenas leitura", users_html)
 
         maintenance_history = self.client.get("/manutencao?equipamento=EQ-003")

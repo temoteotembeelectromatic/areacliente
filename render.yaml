@@ -11,6 +11,8 @@ services:
         value: cliente.teste@exemplo.pt
       - key: CLIENT_PASSWORD_HASH
         sync: false
+      - key: CLIENT_USER_ACCOUNTS_JSON
+        sync: false
       - key: CONTROLLER_LEGAL_NAME
         value: Smartic Pro - Ambiente de Teste
       - key: CONTROLLER_ADDRESS
