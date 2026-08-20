@@ -46,11 +46,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const option = document.createElement("button");
       option.type = "button";
       option.className = "client-suggestion";
-      const name = document.createElement("strong");
-      name.textContent = item.name;
-      const number = document.createElement("small");
+      const number = document.createElement("strong");
       number.textContent = item.number;
-      option.append(name, number);
+      const name = document.createElement("small");
+      name.textContent = item.name;
+      option.append(number, name);
       option.addEventListener("click", () => {
         chosen.set(String(item.number), item.name);
         clientSearch.value = "";

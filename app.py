@@ -336,7 +336,11 @@ def find_client_source(cursor):
         SELECT table_name, column_name
         FROM information_schema.columns
         WHERE table_schema = 'public'
-          AND table_name IN ('clientes', 'cliente', 'registo_clientes', 'registo_equipamentos')
+          AND (
+            table_name IN ('clientes', 'cliente', 'registo_clientes', 'registo_equipamentos')
+            OR table_name ILIKE '%cliente%'
+            OR table_name ILIKE '%client%'
+          )
         ORDER BY CASE table_name
           WHEN 'clientes' THEN 1
           WHEN 'cliente' THEN 2
@@ -361,11 +365,13 @@ def find_client_source(cursor):
                     "nome_da_empresa",
                     "nome_cliente",
                     "cliente_nome",
+                    "nome_fantasia",
                     "razao_social",
                     "designacao_social",
                     "nome",
                     "empresa",
                     "designacao",
+                    "descricao",
                 )
                 if column in columns
             ),
