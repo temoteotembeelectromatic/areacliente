@@ -9,7 +9,7 @@ from functools import wraps
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
@@ -365,7 +365,7 @@ def external_client_rows(numbers):
         if not number_column:
             return [{"number": number, "name": "Cliente associado"} for number in numbers]
         name_expression = (
-            f"COALESCE(NULLIF(TRIM(COALESCE({name_column}, '')), ''), CAST({number_column} AS TEXT))"
+            f"COALESCE(NULLIF(TRIM(CAST({name_column} AS TEXT)), ''), CAST({number_column} AS TEXT))"
             if name_column
             else f"CAST({number_column} AS TEXT)"
         )
@@ -393,6 +393,73 @@ def external_client_rows(numbers):
     except Exception:
         app.logger.exception("Falha ao consultar a tabela de clientes")
         return [{"number": number, "name": "Cliente associado"} for number in numbers]
+    finally:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+
+
+def external_client_search(query):
+    query = query.strip()[:100]
+    if not DATABASE_URL_2:
+        return [
+            {"number": row["numero_cliente"], "name": "Cliente de teste"}
+            for row in equipment
+            if not query or query.casefold() in row["numero_cliente"].casefold()
+        ][:20]
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'clientes'
+            """
+        )
+        columns = {row["column_name"] for row in cursor.fetchall()}
+        number_column = next(
+            (column for column in ("numero_cliente", "numero", "id") if column in columns),
+            None,
+        )
+        name_column = next(
+            (column for column in ("nome_empresa", "nome", "empresa", "designacao") if column in columns),
+            None,
+        )
+        if not number_column:
+            return []
+        number_expression = f"TRIM(CAST({number_column} AS TEXT))"
+        name_expression = (
+            f"COALESCE(NULLIF(TRIM(CAST({name_column} AS TEXT)), ''), {number_expression})"
+            if name_column
+            else number_expression
+        )
+        search = f"%{query}%"
+        cursor.execute(
+            f"""
+            SELECT {number_expression} AS number, {name_expression} AS name
+            FROM clientes
+            WHERE {number_expression} ILIKE %s
+               OR {name_expression} ILIKE %s
+            ORDER BY name, number
+            LIMIT 20
+            """,
+            (search, search),
+        )
+        return [
+            {"number": row["number"], "name": row["name"] or row["number"]}
+            for row in cursor.fetchall()
+        ]
+    except Exception:
+        app.logger.exception("Falha na pesquisa de clientes")
+        return []
     finally:
         if connection is not None:
             connection.rollback()
@@ -1327,6 +1394,17 @@ def utilizadores():
         current_user_role=current_user().get("role"),
         profile=client_profile,
     )
+
+
+@app.route("/api/clientes")
+@login_required
+def api_clientes():
+    if current_user().get("role") != "Administrador":
+        abort(403)
+    query = request.args.get("q", "").strip()
+    if len(query) < 2:
+        return jsonify([])
+    return jsonify(external_client_search(query))
 
 
 @app.route("/health")

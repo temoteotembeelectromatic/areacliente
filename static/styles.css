@@ -1186,6 +1186,73 @@ select:focus {
   grid-column: span 2;
 }
 
+.client-search-field {
+  position: relative;
+}
+
+.client-suggestions {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% - 2px);
+  right: 0;
+  left: 0;
+  display: grid;
+  border: 1px solid var(--border);
+  border-top: 0;
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 12%);
+}
+
+.client-suggestion {
+  display: grid;
+  gap: 3px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 11px 12px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.client-suggestion:hover,
+.client-suggestion:focus-visible {
+  background: var(--surface-strong);
+}
+
+.client-suggestion small {
+  color: var(--muted);
+}
+
+.selected-client-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.selected-client-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--brand);
+  padding: 5px 8px;
+  background: #fff7ed;
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.selected-client-chip button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .user-create-submit {
   align-self: end;
   border: 0;

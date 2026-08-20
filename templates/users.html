@@ -16,13 +16,18 @@
         <div><h2>Atribuir novo acesso</h2><p>O novo utilizador ficará limitado aos números de cliente indicados.</p></div>
         <span class="readonly-badge writable-badge">Base de utilizadores</span>
       </div>
-      <form method="post" class="user-create-form">
+      <form method="post" class="user-create-form" id="user-create-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Nome<input name="name" required maxlength="120" autocomplete="name"></label>
         <label>E-mail<input type="email" name="email" required maxlength="254" autocomplete="email"></label>
         <label>Palavra-passe temporária<input type="password" name="password" required minlength="12" autocomplete="new-password"></label>
         <label>Perfil<select name="role"><option>Utilizador</option><option>Administrador</option></select></label>
-        <label class="user-create-wide">Números de cliente separados por vírgulas<input name="client_numbers" required placeholder="6917, 7024"></label>
+        <label class="user-create-wide client-search-field">Pesquisar cliente por nome ou número
+          <input id="client-search" type="search" autocomplete="off" placeholder="Ex.: Abrunheira Park ou 6917" aria-controls="client-suggestions" aria-expanded="false">
+          <div id="client-suggestions" class="client-suggestions" role="listbox"></div>
+          <div id="selected-client-numbers" class="selected-client-numbers"></div>
+          <input id="client-numbers" name="client_numbers" type="hidden" required>
+        </label>
         <button class="filter-submit user-create-submit" type="submit">Criar acesso</button>
       </form>
     </section>

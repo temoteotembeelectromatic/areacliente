@@ -81,6 +81,10 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertIn("TESTE-001", users_html)
         self.assertIn("Apenas leitura", users_html)
 
+        client_suggestions = self.client.get("/api/clientes?q=TESTE")
+        self.assertEqual(client_suggestions.status_code, 200)
+        self.assertIn("TESTE-001", client_suggestions.get_data(as_text=True))
+
         maintenance_history = self.client.get("/manutencao?equipamento=EQ-003")
         self.assertEqual(maintenance_history.status_code, 200)
         self.assertIn("Ocorr", maintenance_history.get_data(as_text=True))
