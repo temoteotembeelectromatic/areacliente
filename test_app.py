@@ -99,6 +99,7 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertIn("Apenas leitura", equipment_html)
         self.assertIn("app.js", equipment_html)
         self.assertIn("Sistema UPS", equipment_html)
+        self.assertNotIn("Todos os clientes autorizados", equipment_html)
         self.assertEqual(equipment_html.count('class="equipment-card"'), 1)
 
         equipment_number_page = self.client.get("/equipamentos?q=EQ-003")

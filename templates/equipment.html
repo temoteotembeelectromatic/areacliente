@@ -18,15 +18,6 @@
 
     <div class="filter-selects">
       <label>
-        Número de cliente
-        <select name="cliente">
-          <option value="">Todos os clientes autorizados</option>
-          {% for number in client_numbers %}
-            <option value="{{ number }}" {% if filters.cliente == number %}selected{% endif %}>{{ number }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>
         Tipo de equipamento
         <select name="tipo">
           <option value="">Todos os tipos</option>
@@ -41,12 +32,12 @@
     </div>
 
     <div class="filter-actions" aria-label="Filtros rápidos">
-      <a class="filter-chip {% if not filters.garantia %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, vista=filters.vista) }}">Todos</a>
-      <a class="filter-chip {% if filters.garantia == '1' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia='1', vista=filters.vista) }}">Em garantia</a>
-      <a class="filter-chip {% if filters.garantia == '0' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia='0', vista=filters.vista) }}">Sem garantia</a>
+      <a class="filter-chip {% if not filters.garantia %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, vista=filters.vista) }}">Todos</a>
+      <a class="filter-chip {% if filters.garantia == '1' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia='1', vista=filters.vista) }}">Em garantia</a>
+      <a class="filter-chip {% if filters.garantia == '0' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia='0', vista=filters.vista) }}">Sem garantia</a>
       <span class="filter-divider"></span>
-      <a class="filter-chip {% if filters.vista == 'cartoes' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia=filters.garantia, vista='cartoes') }}">Cartões</a>
-      <a class="filter-chip {% if filters.vista == 'tabela' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, cliente=filters.cliente, tipo=filters.tipo, garantia=filters.garantia, vista='tabela') }}">Tabela</a>
+      <a class="filter-chip {% if filters.vista == 'cartoes' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia=filters.garantia, vista='cartoes') }}">Cartões</a>
+      <a class="filter-chip {% if filters.vista == 'tabela' %}active{% endif %}" href="{{ url_for('equipamentos', q=filters.q, tipo=filters.tipo, garantia=filters.garantia, vista='tabela') }}">Tabela</a>
     </div>
   </form>
 
