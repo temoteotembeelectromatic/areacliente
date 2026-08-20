@@ -1591,9 +1591,15 @@ def checklists():
     if not end_date:
         end_date = today.isoformat()
     rows, error = validated_checklists("", start_date, end_date, selected_equipment)
+    try:
+        maintenance_months = maintenance_by_month(rows)
+    except Exception:
+        app.logger.exception("Falha ao organizar o histórico de checklists")
+        maintenance_months = []
+        error = "Não foi possível apresentar as manutenções neste momento."
     return render_template(
         "checklists.html",
-        maintenance_months=maintenance_by_month(rows),
+        maintenance_months=maintenance_months,
         start_date=start_date,
         end_date=end_date,
         selected_equipment=selected_equipment,

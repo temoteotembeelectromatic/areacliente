@@ -86,6 +86,12 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertEqual(maintenance_page.status_code, 200)
         self.assertIn("Seleccione um equipamento", maintenance_page.get_data(as_text=True))
 
+        checklist_page = self.client.get("/checklists")
+        checklist_html = checklist_page.get_data(as_text=True)
+        self.assertEqual(checklist_page.status_code, 200)
+        self.assertIn("Manutenções e inspeções", checklist_html)
+        self.assertIn("Data inicial", checklist_html)
+
         users_page = self.client.get("/utilizadores")
         users_html = users_page.get_data(as_text=True)
         self.assertEqual(users_page.status_code, 200)
