@@ -31,6 +31,12 @@ services:
         value: true
       - key: PDF_MAX_JOB_BYTES
         value: 52428800
+      - key: PDF_MAX_PHOTO_BYTES
+        value: 4194304
+      - key: PDF_MAX_PHOTO_PIXELS
+        value: 12000000
+      - key: PDF_MAX_PHOTOS_PER_REPORT
+        value: 12
   - type: worker
     name: area-cliente-pdf-worker
     runtime: python
@@ -53,3 +59,9 @@ services:
         value: true
       - key: PDF_MAX_JOB_BYTES
         value: 52428800
+      - key: PDF_MAX_PHOTO_BYTES
+        value: 4194304
+      - key: PDF_MAX_PHOTO_PIXELS
+        value: 12000000
+      - key: PDF_MAX_PHOTOS_PER_REPORT
+        value: 12

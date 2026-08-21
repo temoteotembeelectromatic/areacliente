@@ -14,6 +14,8 @@ from xml.sax.saxutils import escape
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from PIL import Image as PillowImage
+from PIL import ImageOps
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -50,6 +52,9 @@ CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
 DATABASE_URL_2 = os.environ.get("DATABASE_URL_2", "").strip()
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 PDF_MAX_JOB_BYTES = int(os.environ.get("PDF_MAX_JOB_BYTES", str(50 * 1024 * 1024)))
+PDF_MAX_PHOTO_BYTES = int(os.environ.get("PDF_MAX_PHOTO_BYTES", str(4 * 1024 * 1024)))
+PDF_MAX_PHOTO_PIXELS = int(os.environ.get("PDF_MAX_PHOTO_PIXELS", str(12_000_000)))
+PDF_MAX_PHOTOS_PER_REPORT = int(os.environ.get("PDF_MAX_PHOTOS_PER_REPORT", "12"))
 CLIENT_ALLOWED_NUMBERS = [
     value.strip()
     for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
@@ -857,12 +862,24 @@ def pdf_photo(url, caption):
         photo_request = Request(str(url), headers={"User-Agent": "Electromatic-AreaCliente/1.0"})
         with urlopen(photo_request, timeout=6) as response:
             content_length = int(response.headers.get("Content-Length", "0") or 0)
-            if content_length > 8 * 1024 * 1024:
+            if content_length > PDF_MAX_PHOTO_BYTES:
                 return None
-            photo_data = response.read(8 * 1024 * 1024 + 1)
-        if len(photo_data) > 8 * 1024 * 1024:
+            photo_data = response.read(PDF_MAX_PHOTO_BYTES + 1)
+        if len(photo_data) > PDF_MAX_PHOTO_BYTES:
             return None
-        image = Image(BytesIO(photo_data))
+        with PillowImage.open(BytesIO(photo_data)) as source:
+            if source.width * source.height > PDF_MAX_PHOTO_PIXELS:
+                return None
+            image_source = ImageOps.exif_transpose(source)
+            if image_source.mode not in {"RGB", "L"}:
+                image_source = image_source.convert("RGB")
+            image_source.thumbnail((1280, 960), PillowImage.Resampling.LANCZOS)
+            compressed_photo = BytesIO()
+            image_source.save(compressed_photo, format="JPEG", quality=72, optimize=True)
+        compressed_photo.seek(0)
+        image = Image(compressed_photo)
+        # Mantém o buffer comprimido disponível até o ReportLab terminar o documento.
+        image._compressed_source = compressed_photo
         image._restrictSize(82 * mm, 62 * mm)
         return [image, Spacer(1, 2 * mm), Paragraph(pdf_text(caption), PDF_STYLES["photo_caption"])]
     except Exception:
@@ -1023,7 +1040,8 @@ def build_checklist_pdf(rows, start_date, end_date, equipment_number, allowed_nu
                     Spacer(1, 4 * mm),
                 ])
 
-        photo_cells = [pdf_photo(photo.get("file_url"), photo.get("file_name")) for photo in detail.get("photos") or []]
+        report_photos = (detail.get("photos") or [])[:PDF_MAX_PHOTOS_PER_REPORT]
+        photo_cells = [pdf_photo(photo.get("file_url"), photo.get("file_name")) for photo in report_photos]
         photo_cells = [cell for cell in photo_cells if cell]
         if photo_cells:
             story.append(Paragraph("Fotografias", PDF_STYLES["section"]))
@@ -1122,6 +1140,24 @@ def enqueue_checklist_pdf_job(requested_by, start_date, end_date, equipment_numb
         connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
         cursor = connection.cursor()
         ensure_pdf_jobs_table(cursor)
+        cursor.execute(
+            """
+            SELECT id
+            FROM portal_pdf_jobs
+            WHERE requested_by = %s
+              AND start_date = %s::date
+              AND end_date = %s::date
+              AND equipment_number = %s
+              AND status IN ('queued', 'processing')
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (requested_by, start_date, end_date, equipment_number),
+        )
+        existing_job = cursor.fetchone()
+        if existing_job:
+            connection.commit()
+            return existing_job[0]
         job_id = uuid4().hex
         cursor.execute(
             """
@@ -1244,7 +1280,7 @@ def claim_next_pdf_job():
             """
             UPDATE portal_pdf_jobs
             SET status = 'queued', progress = 0, stage = 'Em fila', started_at = NULL
-            WHERE status = 'processing' AND started_at < NOW() - INTERVAL '45 minutes'
+            WHERE status = 'processing' AND started_at < NOW() - INTERVAL '10 minutes'
             """
         )
         cursor.execute(

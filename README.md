@@ -73,7 +73,7 @@ As exportações de relatórios são colocadas numa fila na `DATABASE_URL` e pro
 
 No worker, configure as mesmas variáveis `SECRET_KEY`, `CLIENT_EMAIL`, `CLIENT_PASSWORD_HASH`, `CLIENT_USER_ACCOUNTS_JSON`, `DATABASE_URL`, `DATABASE_URL_2` e `EQUIPMENT_TEST_MODE` usadas no serviço web. `DATABASE_URL` é a única base onde a fila e os ficheiros temporários são gravados; `DATABASE_URL_2` continua a ser usada apenas em transações de leitura para consultar os relatórios.
 
-Pode ajustar o limite temporário de cada ficheiro com `PDF_MAX_JOB_BYTES` (por omissão, 50 MB). Para serviços Render já existentes, crie o worker no painel ou sincronize o Blueprint para aplicar a definição do `render.yaml`.
+Pode ajustar o limite temporário de cada ficheiro com `PDF_MAX_JOB_BYTES` (por omissão, 50 MB). Para controlar o consumo de memória, cada fotografia é reduzida antes de entrar no PDF; os limites por omissão são `PDF_MAX_PHOTO_BYTES=4194304`, `PDF_MAX_PHOTO_PIXELS=12000000` e `PDF_MAX_PHOTOS_PER_REPORT=12`. Para serviços Render já existentes, crie o worker no painel ou sincronize o Blueprint para aplicar a definição do `render.yaml`.
 
 Para associar vários utilizadores aos respectivos clientes, configure `CLIENT_USER_ACCOUNTS_JSON` no Render. Cada conta deve conter um hash seguro e pelo menos um número de cliente:
 
