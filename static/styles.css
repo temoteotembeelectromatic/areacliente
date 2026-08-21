@@ -2016,7 +2016,16 @@ textarea:focus {
 }
 
 .maintenance-overview-filters {
-  border-top-color: var(--electric);
+  border-top-color: var(--border);
+}
+
+.maintenance-overview-filters .filter-submit {
+  background: #202020;
+  color: #ffffff;
+}
+
+.maintenance-overview-filters .filter-submit:hover {
+  background: #3a3a3a;
 }
 
 .maintenance-overview-actions {
@@ -2032,14 +2041,16 @@ textarea:focus {
   min-height: 38px;
   padding: 8px 14px;
   border-radius: 6px;
-  background: var(--brand);
-  color: #151515;
+  border: 1px solid #202020;
+  background: #202020;
+  color: #ffffff;
   font-size: 0.84rem;
   font-weight: 800;
 }
 
 .pdf-download:hover {
-  background: var(--electric);
+  border-color: #3a3a3a;
+  background: #3a3a3a;
 }
 
 .maintenance-overview-actions form {
@@ -2048,7 +2059,7 @@ textarea:focus {
 
 .pdf-jobs {
   margin-bottom: 18px;
-  border-top: 3px solid var(--electric);
+  border-top: 1px solid var(--border);
 }
 
 .pdf-jobs-heading {
@@ -2126,7 +2137,7 @@ textarea:focus {
 }
 
 .pdf-job-status {
-  color: var(--brand-dark);
+  color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -2144,7 +2155,7 @@ textarea:focus {
   width: 0;
   height: 100%;
   border-radius: inherit;
-  background: var(--electric);
+  background: #b9996c;
   transition: width 350ms ease;
 }
 
