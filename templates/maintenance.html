@@ -66,7 +66,7 @@
           <div class="maintenance-record-date">{{ item.date }}</div>
           <div class="maintenance-record-main">
             <div class="maintenance-record-topline">
-              <span class="maintenance-record-id">Intervenção #{{ item.id }}</span>
+              <span class="maintenance-record-id">Manutenção #{{ item.id }}</span>
               <span class="status {{ 'status-watch' if item.status not in ['Concluída', 'Concluida'] else 'status-good' }}">{{ item.status }}</span>
             </div>
             <h3>{{ item.intervention_type or 'Intervenção' }}</h3>
