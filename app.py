@@ -1361,8 +1361,16 @@ def validated_checklists(contract, start_date, end_date, equipment_number=""):
         cursor.execute(
             f"""
             SELECT c.id, c.tipo_checklist, c.data_checklist, c.numero_contrato,
-                   c.numero_equipamento, c.posicao, c.estado, c.tecnicos, c.criado_por_nome
+                   c.numero_equipamento, c.posicao, c.estado, c.tecnicos, c.criado_por_nome,
+                   COALESCE(NULLIF(TRIM(e.tipo_equipamento), ''), 'Equipamento') AS equipment_name
             FROM checklists_manutencao c
+            LEFT JOIN LATERAL (
+                SELECT tipo_equipamento
+                FROM registo_equipamentos
+                WHERE TRIM(COALESCE(numero_equipamento, '')) = TRIM(COALESCE(c.numero_equipamento, ''))
+                ORDER BY id DESC
+                LIMIT 1
+            ) e ON TRUE
             WHERE c.data_checklist >= %s::date
               AND c.data_checklist <= %s::date
               {contract_clause}

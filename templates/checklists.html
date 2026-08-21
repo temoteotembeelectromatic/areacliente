@@ -44,7 +44,7 @@
               <article class="maintenance-overview-record maintenance-overview-{{ item.tone }}">
                 <div class="maintenance-record-type">{{ item.category }}</div>
                 <div class="maintenance-overview-main">
-                  <h3>{{ item.tipo_checklist or item.category }}</h3>
+                  <h3>{{ item.equipment_name }} #{{ item.numero_equipamento }}</h3>
                   <span>Equipamento #{{ item.numero_equipamento }} · Contrato {{ item.numero_contrato }} · {{ item.posicao or '-' }}</span>
                 </div>
                 <div class="maintenance-overview-meta">
