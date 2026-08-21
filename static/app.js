@@ -1,4 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-auto-dismiss]").forEach((message) => {
+    window.setTimeout(() => {
+      message.classList.add("is-leaving");
+      window.setTimeout(() => message.remove(), 250);
+    }, 5000);
+  });
+
   document.querySelectorAll("[data-loading-form]").forEach((form) => {
     form.addEventListener("submit", () => {
       const submitButton = form.querySelector("button[type='submit']");

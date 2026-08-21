@@ -372,6 +372,17 @@ select:focus {
   padding: 12px 14px;
   background: #fff3f0;
   color: var(--danger);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.message.success {
+  background: #edf6f1;
+  color: #23624e;
+}
+
+.message.is-leaving {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .page-header {

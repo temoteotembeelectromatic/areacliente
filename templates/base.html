@@ -46,7 +46,7 @@
           {% if messages %}
             <div class="messages">
               {% for category, message in messages %}
-                <p class="message {{ category }}">{{ message }}</p>
+                <p class="message {{ category }}"{% if category == 'success' %} data-auto-dismiss{% endif %}>{{ message }}</p>
               {% endfor %}
             </div>
           {% endif %}
