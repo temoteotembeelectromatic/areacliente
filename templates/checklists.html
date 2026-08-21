@@ -50,12 +50,21 @@
               <span data-pdf-job-stage>{{ job.stage }}</span>
             </div>
             <div class="pdf-job-action">
-              <span class="pdf-job-status" data-pdf-job-status>{{ job.status_label }}</span>
-              {% if job.status == 'completed' %}
-                <a class="contract-detail-link" data-pdf-job-download href="{{ url_for('download_checklists_pdf', job_id=job.id) }}">Descarregar</a>
-              {% else %}
-                <a class="contract-detail-link" data-pdf-job-download hidden href="#">Descarregar</a>
-              {% endif %}
+              <div class="pdf-job-controls">
+                <span class="pdf-job-status" data-pdf-job-status>{{ job.status_label }}</span>
+                {% if job.status == 'completed' %}
+                  <a class="contract-detail-link" data-pdf-job-download href="{{ url_for('download_checklists_pdf', job_id=job.id) }}">Descarregar</a>
+                {% else %}
+                  <a class="contract-detail-link" data-pdf-job-download hidden href="#">Descarregar</a>
+                {% endif %}
+                <form method="post" action="{{ url_for('delete_checklists_pdf', job_id=job.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="data_inicio" value="{{ start_date }}">
+                  <input type="hidden" name="data_fim" value="{{ end_date }}">
+                  <input type="hidden" name="equipamento" value="{{ selected_equipment }}">
+                  <button class="pdf-job-delete" type="submit" aria-label="Eliminar exportação PDF" title="Eliminar exportação PDF">×</button>
+                </form>
+              </div>
             </div>
             <div class="pdf-job-progress" role="progressbar" aria-label="Progresso da exportação PDF" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ job.progress }}">
               <span data-pdf-job-progress style="width: {{ job.progress }}%"></span>

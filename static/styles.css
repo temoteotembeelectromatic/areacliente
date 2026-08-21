@@ -2093,6 +2093,38 @@ textarea:focus {
   align-content: start;
 }
 
+.pdf-job-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.pdf-job-controls form {
+  margin: 0;
+}
+
+.pdf-job-delete {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.pdf-job-delete:hover,
+.pdf-job-delete:focus-visible {
+  border-color: #b43a32;
+  background: #fff1ef;
+  color: #a52e28;
+}
+
 .pdf-job-status {
   color: var(--brand-dark);
   font-size: 0.78rem;
@@ -2394,6 +2426,10 @@ textarea:focus {
 
   .pdf-job-action {
     justify-items: start;
+  }
+
+  .pdf-job-controls {
+    justify-content: flex-start;
   }
 
   .maintenance-legend {

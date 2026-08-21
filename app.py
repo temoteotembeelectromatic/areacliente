@@ -1245,6 +1245,30 @@ def pdf_job_for_user(job_id, requested_by, include_file=False):
             connection.close()
 
 
+def delete_pdf_job_for_user(job_id, requested_by):
+    if not DATABASE_URL or not job_id:
+        return False
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        cursor.execute(
+            "DELETE FROM portal_pdf_jobs WHERE id = %s AND requested_by = %s",
+            (job_id, requested_by),
+        )
+        deleted = cursor.rowcount == 1
+        connection.commit()
+        return deleted
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao eliminar tarefa de PDF")
+        return False
+    finally:
+        if connection is not None:
+            connection.close()
+
+
 def update_pdf_job(job_id, progress, stage):
     connection = None
     try:
@@ -2398,6 +2422,25 @@ def download_checklists_pdf(job_id):
         as_attachment=True,
         download_name=job.get("file_name") or "manutencoes.pdf",
     )
+
+
+@app.route("/checklists/pdf/<job_id>/eliminar", methods=["POST"])
+@login_required
+def delete_checklists_pdf(job_id):
+    verify_csrf()
+    start_date = request.form.get("data_inicio", "").strip()[:10]
+    end_date = request.form.get("data_fim", "").strip()[:10]
+    selected_equipment = request.form.get("equipamento", "").strip()[:100]
+    if delete_pdf_job_for_user(job_id, current_user()["email"]):
+        flash("A exportação PDF foi eliminada.", "success")
+    else:
+        flash("A exportação já não está disponível.", "error")
+    return redirect(url_for(
+        "checklists",
+        data_inicio=start_date or None,
+        data_fim=end_date or None,
+        equipamento=selected_equipment or None,
+    ))
 
 
 @app.route("/documentos")
