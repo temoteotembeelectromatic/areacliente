@@ -1079,6 +1079,27 @@ select:focus {
   font-weight: 800;
 }
 
+.detail-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-toolbar .detail-pdf-link {
+  padding: 7px 10px;
+  border: 1px solid #202020;
+  border-radius: 5px;
+  background: #202020;
+  color: #ffffff;
+  font-size: 0.78rem;
+}
+
+.detail-toolbar .detail-pdf-link:hover {
+  border-color: #3a3a3a;
+  background: #3a3a3a;
+  color: #ffffff;
+}
+
 .detail-summary-bar {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2505,6 +2526,12 @@ textarea:focus {
   .detail-hero small {
     grid-column: 1;
     justify-self: start;
+  }
+
+  .detail-toolbar,
+  .detail-toolbar-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .detail-photo-grid {

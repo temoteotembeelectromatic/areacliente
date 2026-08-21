@@ -119,6 +119,11 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertEqual(intervention_detail.status_code, 200)
         self.assertIn("ELECTROMATIC", intervention_detail.get_data(as_text=True))
 
+        intervention_pdf = self.client.get("/manutencao/MC-2026-007/pdf")
+        self.assertEqual(intervention_pdf.status_code, 200)
+        self.assertEqual(intervention_pdf.mimetype, "application/pdf")
+        self.assertTrue(intervention_pdf.data.startswith(b"%PDF"))
+
         equipment_page = self.client.get("/equipamentos?q=EQ-003")
         equipment_html = equipment_page.get_data(as_text=True)
         self.assertEqual(equipment_page.status_code, 200)

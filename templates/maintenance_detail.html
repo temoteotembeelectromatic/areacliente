@@ -10,7 +10,10 @@
 
     <div class="detail-toolbar">
       <span>Intervenção #{{ detail.id }}</span>
-      <a href="{{ url_for('manutencao', equipamento=detail.numero_equipamento or detail.equipment) }}">Voltar ao histórico</a>
+      <div class="detail-toolbar-actions">
+        <a class="detail-pdf-link" href="{{ url_for('manutencao_detalhe_pdf', intervention_id=detail.id) }}">Descarregar PDF</a>
+        <a href="{{ url_for('manutencao', equipamento=detail.numero_equipamento or detail.equipment) }}">Voltar ao histórico</a>
+      </div>
     </div>
 
     <section class="detail-summary-bar">

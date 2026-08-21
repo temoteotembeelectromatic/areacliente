@@ -2303,6 +2303,28 @@ def manutencao_detalhe(intervention_id):
     return render_template("maintenance_detail.html", detail=detail)
 
 
+@app.route("/manutencao/<intervention_id>/pdf")
+@login_required
+def manutencao_detalhe_pdf(intervention_id):
+    detail = maintenance_detail(intervention_id)
+    if not detail:
+        abort(404)
+    report_date = str(detail.get("data_checklist") or detail.get("date") or date.today())[:10]
+    equipment_number = str(detail.get("numero_equipamento") or detail.get("equipment") or "")
+    output, _ = build_checklist_pdf(
+        [{"id": intervention_id}],
+        report_date,
+        report_date,
+        equipment_number,
+    )
+    return send_file(
+        output,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"intervencao-{intervention_id}.pdf",
+    )
+
+
 @app.route("/checklists")
 @login_required
 def checklists():
