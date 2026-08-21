@@ -69,7 +69,6 @@
               <span class="maintenance-record-id">Manutenção #{{ item.id }}</span>
               <span class="status {{ 'status-watch' if item.status not in ['Concluída', 'Concluida'] else 'status-good' }}">{{ item.status }}</span>
             </div>
-            <h3>{{ item.intervention_type or 'Intervenção' }}</h3>
             <p>{{ selected_option.type if selected_option else item.title }}</p>
             <span>Contrato {{ item.contract }} · {{ item.location }} · Técnico: {{ item.technician }}</span>
             {% if item.work_done %}<p>{{ item.work_done }}</p>{% endif %}
