@@ -75,13 +75,28 @@
         <div class="detail-block-heading">Fotografias</div>
         <div class="detail-photo-grid">
           {% for photo in detail.photos %}
-            <a href="{{ photo.file_url }}" target="_blank" rel="noopener">
+            <button class="detail-photo-trigger" type="button" data-photo-modal-trigger data-photo-url="{{ photo.file_url }}" data-photo-name="{{ photo.file_name }}">
               <img src="{{ photo.file_url }}" alt="{{ photo.file_name }}" loading="lazy">
               <small>{{ photo.file_name }}</small>
-            </a>
+            </button>
           {% endfor %}
         </div>
       </section>
+
+      <dialog class="photo-dialog" data-photo-dialog aria-label="Visualização de fotografia">
+        <div class="photo-dialog-shell">
+          <div class="photo-dialog-toolbar">
+            <strong data-photo-modal-name>Fotografia</strong>
+            <form method="dialog"><button class="photo-dialog-close" type="submit" aria-label="Fechar fotografia" title="Fechar">×</button></form>
+          </div>
+          <div class="photo-dialog-stage">
+            <button class="photo-dialog-arrow" type="button" data-photo-modal-previous aria-label="Fotografia anterior" title="Fotografia anterior">‹</button>
+            <img data-photo-modal-image src="" alt="">
+            <button class="photo-dialog-arrow" type="button" data-photo-modal-next aria-label="Fotografia seguinte" title="Fotografia seguinte">›</button>
+          </div>
+          <a class="photo-dialog-original" data-photo-modal-original href="#" target="_blank" rel="noopener">Abrir original</a>
+        </div>
+      </dialog>
     {% endif %}
   </div>
 {% endblock %}

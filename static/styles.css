@@ -1260,10 +1260,19 @@ select:focus {
   padding: 16px;
 }
 
-.detail-photo-grid a {
+.detail-photo-trigger {
   overflow: hidden;
+  padding: 0;
   border: 1px solid var(--border);
   background: var(--surface-strong);
+  color: inherit;
+  text-align: left;
+  cursor: zoom-in;
+}
+
+.detail-photo-trigger:hover,
+.detail-photo-trigger:focus-visible {
+  border-color: #77716a;
 }
 
 .detail-photo-grid img {
@@ -1280,6 +1289,98 @@ select:focus {
   color: var(--muted);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.photo-dialog {
+  width: min(1120px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 0;
+  background: #171717;
+  color: #ffffff;
+}
+
+.photo-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.76);
+}
+
+.photo-dialog-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: min(720px, calc(100vh - 32px));
+}
+
+.photo-dialog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #393939;
+  font-size: 0.86rem;
+}
+
+.photo-dialog-toolbar form {
+  margin: 0;
+}
+
+.photo-dialog-close,
+.photo-dialog-arrow {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #5a5a5a;
+  background: #252525;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.photo-dialog-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.photo-dialog-stage {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  min-height: 0;
+}
+
+.photo-dialog-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: min(620px, calc(100vh - 176px));
+  margin: auto;
+  object-fit: contain;
+}
+
+.photo-dialog-arrow {
+  width: 36px;
+  height: 48px;
+  margin: 6px;
+  border-radius: 5px;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.photo-dialog-close:hover,
+.photo-dialog-close:focus-visible,
+.photo-dialog-arrow:hover,
+.photo-dialog-arrow:focus-visible {
+  border-color: #ffffff;
+  background: #3a3a3a;
+}
+
+.photo-dialog-original {
+  justify-self: end;
+  margin: 0 16px 16px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .users-page-header {

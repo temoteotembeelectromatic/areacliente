@@ -41,6 +41,44 @@ document.addEventListener("DOMContentLoaded", () => {
     window.setTimeout(pollPdfJobs, 700);
   }
 
+  const photoDialog = document.querySelector("[data-photo-dialog]");
+  const photoTriggers = Array.from(document.querySelectorAll("[data-photo-modal-trigger]"));
+  if (photoDialog && photoTriggers.length) {
+    const photoImage = photoDialog.querySelector("[data-photo-modal-image]");
+    const photoName = photoDialog.querySelector("[data-photo-modal-name]");
+    const photoOriginal = photoDialog.querySelector("[data-photo-modal-original]");
+    let activePhoto = 0;
+
+    const showPhoto = (index) => {
+      activePhoto = (index + photoTriggers.length) % photoTriggers.length;
+      const trigger = photoTriggers[activePhoto];
+      const { photoUrl, photoName: name } = trigger.dataset;
+      photoImage.src = photoUrl;
+      photoImage.alt = name;
+      photoName.textContent = name;
+      photoOriginal.href = photoUrl;
+    };
+
+    photoTriggers.forEach((trigger, index) => {
+      trigger.addEventListener("click", () => {
+        showPhoto(index);
+        photoDialog.showModal();
+      });
+    });
+    photoDialog.querySelector("[data-photo-modal-previous]").addEventListener("click", () => showPhoto(activePhoto - 1));
+    photoDialog.querySelector("[data-photo-modal-next]").addEventListener("click", () => showPhoto(activePhoto + 1));
+    photoDialog.addEventListener("click", (event) => {
+      if (event.target === photoDialog) photoDialog.close();
+    });
+    photoDialog.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") showPhoto(activePhoto - 1);
+      if (event.key === "ArrowRight") showPhoto(activePhoto + 1);
+    });
+    photoDialog.addEventListener("close", () => {
+      photoImage.removeAttribute("src");
+    });
+  }
+
   const clientSearch = document.querySelector("#client-search");
   const clientSuggestions = document.querySelector("#client-suggestions");
   const selectedClients = document.querySelector("#selected-client-numbers");
