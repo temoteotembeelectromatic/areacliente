@@ -660,6 +660,90 @@ def dashboard_equipment_context():
             connection.close()
 
 
+def recent_intervention_reports(contracts, limit=3):
+    if not DATABASE_URL_2:
+        return [
+            {
+                "id": item["id"],
+                "title": item["title"],
+                "contract": "CTR-2026-001",
+                "status": item["status"],
+            }
+            for item in maintenance[:limit]
+        ]
+
+    allowed_numbers = current_allowed_client_numbers()
+    allowed_contract_numbers = [item["number"] for item in contracts]
+    if not allowed_numbers and not EQUIPMENT_TEST_MODE:
+        return []
+
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            DATABASE_URL_2,
+            connect_timeout=5,
+            options="-c default_transaction_read_only=on -c statement_timeout=5000",
+        )
+        connection.set_session(readonly=True, autocommit=False)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        clauses = [
+            """
+            LOWER(TRIM(COALESCE(s.estado_servico, ''))) NOT IN (
+                'serviço delegado', 'servico delegado',
+                'checklist por validar', 'checklist pendente de validação',
+                'checklist pendente de validacao'
+            )
+            """
+        ]
+        params = []
+        if allowed_contract_numbers:
+            clauses.append("TRIM(COALESCE(s.numero_servico, '')) = ANY(%s)")
+            params.append(allowed_contract_numbers)
+        if allowed_numbers:
+            clauses.append(
+                """
+                EXISTS (
+                    SELECT 1
+                    FROM registo_equipamentos e
+                    WHERE (
+                        TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_1_id, ''))
+                        OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_2_id, ''))
+                        OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_3_id, ''))
+                    )
+                    AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)
+                )
+                """
+            )
+            params.append(allowed_numbers)
+        params.append(limit)
+        cursor.execute(
+            f"""
+            SELECT s.id,
+                   COALESCE(NULLIF(TRIM(s.titulo), ''), NULLIF(TRIM(s.trabalhos_realizados), ''), 'Relatório de intervenção') AS title,
+                   COALESCE(s.data_fim, s.data_inicio) AS date,
+                   COALESCE(NULLIF(TRIM(s.estado_servico), ''), '-') AS status,
+                   COALESCE(NULLIF(TRIM(s.numero_servico), ''), '-') AS contract
+            FROM sharepoint_intervencoes s
+            WHERE {' AND '.join(clauses)}
+            ORDER BY s.data_fim DESC NULLS LAST, s.data_inicio DESC NULLS LAST, s.id DESC
+            LIMIT %s
+            """,
+            params,
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    except Exception:
+        app.logger.exception("Falha ao consultar as RIs recentes")
+        return []
+    finally:
+        if connection is not None:
+            try:
+                connection.rollback()
+            except psycopg2.Error:
+                pass
+            finally:
+                connection.close()
+
+
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -1506,7 +1590,6 @@ def logout():
 @login_required
 def dashboard():
     visible_equipment, equipment_total, contracts = dashboard_equipment_context()
-    visible_equipment_ids = {item["id"] for item in visible_equipment}
     client_total = len({item["client_number"] for item in contracts})
     dashboard_profile = dict(client_profile)
     if len(contracts) == 1:
@@ -1525,7 +1608,7 @@ def dashboard():
         cards=cards,
         contracts=contracts,
         equipment=visible_equipment,
-        maintenance=[item for item in maintenance if item["equipment"] in visible_equipment_ids],
+        maintenance=recent_intervention_reports(contracts),
         guides=guides,
         contract_valid_until=CONTRACT_VALID_UNTIL,
     )

@@ -63,6 +63,7 @@ class LoginSecurityTests(unittest.TestCase):
         dashboard_html = dashboard.get_data(as_text=True)
         self.assertIn("Equipamentos associados", dashboard_html)
         self.assertIn("Contratos associados", dashboard_html)
+        self.assertIn("Últimas RIs", dashboard_html)
         self.assertIn("CTR-2026-001", dashboard_html)
 
         empty_equipment = self.client.get("/equipamentos")
