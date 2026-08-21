@@ -93,6 +93,11 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertIn("Manutenções e inspeções", checklist_html)
         self.assertIn("Data inicial", checklist_html)
 
+        checklist_pdf = self.client.get("/checklists/pdf")
+        self.assertEqual(checklist_pdf.status_code, 200)
+        self.assertEqual(checklist_pdf.mimetype, "application/pdf")
+        self.assertTrue(checklist_pdf.data.startswith(b"%PDF"))
+
         users_page = self.client.get("/utilizadores")
         users_html = users_page.get_data(as_text=True)
         self.assertEqual(users_page.status_code, 200)
@@ -108,11 +113,11 @@ class LoginSecurityTests(unittest.TestCase):
 
         maintenance_history = self.client.get("/manutencao?equipamento=EQ-003")
         self.assertEqual(maintenance_history.status_code, 200)
-        self.assertIn("Ocorr", maintenance_history.get_data(as_text=True))
+        self.assertIn("UPS", maintenance_history.get_data(as_text=True))
 
         intervention_detail = self.client.get("/manutencao/MC-2026-007")
         self.assertEqual(intervention_detail.status_code, 200)
-        self.assertIn("Detalhe da intervenção", intervention_detail.get_data(as_text=True))
+        self.assertIn("ELECTROMATIC", intervention_detail.get_data(as_text=True))
 
         equipment_page = self.client.get("/equipamentos?q=EQ-003")
         equipment_html = equipment_page.get_data(as_text=True)

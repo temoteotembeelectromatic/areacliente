@@ -6,13 +6,20 @@ from collections import defaultdict, deque
 from datetime import date, timedelta
 from io import BytesIO
 from functools import wraps
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
+from xml.sax.saxutils import escape
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
+from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -836,6 +843,210 @@ def pdf_response(filename, items):
     return send_file(output, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
 
+def pdf_text(value):
+    return escape(str(value or "-")).replace("\n", "<br/>")
+
+
+def pdf_photo(url, caption):
+    parsed_url = urlparse(str(url or ""))
+    if parsed_url.scheme not in {"http", "https"}:
+        return None
+    try:
+        photo_request = Request(str(url), headers={"User-Agent": "Electromatic-AreaCliente/1.0"})
+        with urlopen(photo_request, timeout=6) as response:
+            content_length = int(response.headers.get("Content-Length", "0") or 0)
+            if content_length > 8 * 1024 * 1024:
+                return None
+            photo_data = response.read(8 * 1024 * 1024 + 1)
+        if len(photo_data) > 8 * 1024 * 1024:
+            return None
+        image = Image(BytesIO(photo_data))
+        image._restrictSize(82 * mm, 62 * mm)
+        return [image, Spacer(1, 2 * mm), Paragraph(pdf_text(caption), PDF_STYLES["photo_caption"])]
+    except Exception:
+        app.logger.warning("Não foi possível incluir uma fotografia no PDF")
+        return None
+
+
+def checklist_pdf_header(pdf_canvas, document):
+    page_width, page_height = A4
+    pdf_canvas.saveState()
+    pdf_canvas.setFillColor(colors.HexColor("#171717"))
+    pdf_canvas.rect(0, page_height - 22 * mm, page_width, 22 * mm, fill=1, stroke=0)
+    pdf_canvas.setFillColor(colors.HexColor("#f58200"))
+    pdf_canvas.rect(0, page_height - 22 * mm, 7 * mm, 22 * mm, fill=1, stroke=0)
+    pdf_canvas.setFillColor(colors.white)
+    pdf_canvas.setFont("Helvetica-Bold", 9)
+    pdf_canvas.drawString(12 * mm, page_height - 13 * mm, "ELECTROMATIC")
+    pdf_canvas.setFont("Helvetica", 8)
+    pdf_canvas.drawRightString(page_width - 12 * mm, page_height - 13 * mm, "Área de cliente | Manutenções e inspeções")
+    pdf_canvas.setStrokeColor(colors.HexColor("#dedbd5"))
+    pdf_canvas.line(12 * mm, 12 * mm, page_width - 12 * mm, 12 * mm)
+    pdf_canvas.setFillColor(colors.HexColor("#656565"))
+    pdf_canvas.setFont("Helvetica", 7)
+    pdf_canvas.drawString(12 * mm, 7 * mm, "Relatório gerado pela Área de Cliente Electromatic")
+    pdf_canvas.drawRightString(page_width - 12 * mm, 7 * mm, f"Página {document.page}")
+    pdf_canvas.restoreState()
+
+
+def checklist_pdf_response(rows, start_date, end_date, equipment_number):
+    output = BytesIO()
+    document = SimpleDocTemplate(
+        output,
+        pagesize=A4,
+        rightMargin=12 * mm,
+        leftMargin=12 * mm,
+        topMargin=30 * mm,
+        bottomMargin=18 * mm,
+        title="Manutenções e inspeções Electromatic",
+        author="Electromatic",
+    )
+    story = [
+        Paragraph("Manutenções e inspeções", PDF_STYLES["title"]),
+        Paragraph("Relatórios validados", PDF_STYLES["subtitle"]),
+        Spacer(1, 5 * mm),
+    ]
+    scope_label = f"Equipamento #{equipment_number}" if equipment_number else "Todos os equipamentos autorizados"
+    summary = Table(
+        [["Período", "Registos validados", "Âmbito"], [f"{start_date} a {end_date}", str(len(rows)), scope_label]],
+        colWidths=[48 * mm, 38 * mm, 90 * mm],
+    )
+    summary.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f0ede9")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#4a4a4a")),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#dedbd5")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.extend([summary, Spacer(1, 7 * mm)])
+
+    details = [maintenance_detail(row["id"]) for row in rows]
+    details = [detail for detail in details if detail]
+    if not details:
+        story.append(Paragraph("Não existem relatórios validados para o período selecionado.", PDF_STYLES["body"]))
+
+    for index, detail in enumerate(details):
+        if index:
+            story.append(PageBreak())
+        equipment_name = detail.get("tipo_equipamento") or "Equipamento"
+        detail_equipment_number = detail.get("numero_equipamento") or "-"
+        contract_number = detail.get("numero_contrato") or "-"
+        title = Table(
+            [["", Paragraph(f"<b>{pdf_text(equipment_name)} #{pdf_text(detail_equipment_number)}</b><br/><font size='7'>Contrato {pdf_text(contract_number)}</font>", PDF_STYLES["report_header"]) ]],
+            colWidths=[7 * mm, 169 * mm],
+        )
+        title.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#f58200")),
+            ("BACKGROUND", (1, 0), (1, 0), colors.HexColor("#171717")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("LEFTPADDING", (1, 0), (1, 0), 8),
+        ]))
+        story.extend([title, Spacer(1, 4 * mm)])
+
+        detail_table = Table([
+            ["Data", "Contrato", "Tipo de equipamento", "Técnico(s)"],
+            [pdf_text(detail.get("data_checklist")), pdf_text(contract_number), pdf_text(equipment_name), pdf_text(detail.get("tecnicos") or detail.get("criado_por_nome"))],
+            ["Posição", "Estado", "Cliente", "Criado em"],
+            [pdf_text(detail.get("posicao")), pdf_text(detail.get("estado")), pdf_text(detail.get("numero_cliente")), pdf_text(detail.get("created_at"))],
+        ], colWidths=[44 * mm, 38 * mm, 47 * mm, 47 * mm])
+        detail_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f0ede9")),
+            ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#f0ede9")),
+            ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 2), (-1, 2), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#dedbd5")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.extend([detail_table, Spacer(1, 5 * mm)])
+
+        responses = detail.get("respostas") if isinstance(detail.get("respostas"), dict) else {}
+        for section in responses.get("secoes") or []:
+            story.append(Paragraph(pdf_text(section.get("titulo") or "Checklist"), PDF_STYLES["section"]))
+            question_rows = [[Paragraph("Pergunta", PDF_STYLES["table_head"]), Paragraph("Resposta", PDF_STYLES["table_head"])]]
+            for question in section.get("perguntas") or []:
+                question_title = question.get("pergunta") or question.get("codigo") or "Pergunta"
+                description = question.get("descricao")
+                question_copy = f"<b>{pdf_text(question_title)}</b>"
+                if description:
+                    question_copy += f"<br/><font size='6'>{pdf_text(description)}</font>"
+                question_rows.append([
+                    Paragraph(question_copy, PDF_STYLES["table_body"]),
+                    Paragraph(pdf_text(question.get("resposta")), PDF_STYLES["table_body"]),
+                ])
+            if len(question_rows) > 1:
+                checklist_table = Table(question_rows, colWidths=[138 * mm, 38 * mm], repeatRows=1)
+                checklist_table.setStyle(TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#171717")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#dedbd5")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ]))
+                story.extend([checklist_table, Spacer(1, 5 * mm)])
+
+        for label, value in (("Trabalhos realizados", detail.get("work_done")), ("Comentários", detail.get("comentarios"))):
+            if value:
+                story.extend([
+                    Paragraph(label, PDF_STYLES["section"]),
+                    Paragraph(pdf_text(value), PDF_STYLES["body"]),
+                    Spacer(1, 4 * mm),
+                ])
+
+        photo_cells = [pdf_photo(photo.get("file_url"), photo.get("file_name")) for photo in detail.get("photos") or []]
+        photo_cells = [cell for cell in photo_cells if cell]
+        if photo_cells:
+            story.append(Paragraph("Fotografias", PDF_STYLES["section"]))
+            photo_rows = [photo_cells[position:position + 2] for position in range(0, len(photo_cells), 2)]
+            if photo_rows and len(photo_rows[-1]) == 1:
+                photo_rows[-1].append("")
+            photos_table = Table(photo_rows, colWidths=[88 * mm, 88 * mm])
+            photos_table.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]))
+            story.append(photos_table)
+
+    document.build(story, onFirstPage=checklist_pdf_header, onLaterPages=checklist_pdf_header)
+    output.seek(0)
+    suffix = f"-{equipment_number}" if equipment_number else ""
+    return send_file(
+        output,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"manutencoes{suffix}-{start_date}-{end_date}.pdf",
+    )
+
+
+PDF_STYLES = {
+    "title": ParagraphStyle("PdfTitle", fontName="Helvetica-Bold", fontSize=19, leading=23, textColor=colors.HexColor("#171717")),
+    "subtitle": ParagraphStyle("PdfSubtitle", fontName="Helvetica", fontSize=9, leading=12, textColor=colors.HexColor("#656565")),
+    "report_header": ParagraphStyle("PdfReportHeader", fontName="Helvetica", fontSize=10, leading=13, textColor=colors.white),
+    "section": ParagraphStyle("PdfSection", fontName="Helvetica-Bold", fontSize=10, leading=13, textColor=colors.HexColor("#171717"), spaceBefore=2 * mm, spaceAfter=2 * mm),
+    "table_head": ParagraphStyle("PdfTableHead", fontName="Helvetica-Bold", fontSize=7, leading=9, textColor=colors.white),
+    "table_body": ParagraphStyle("PdfTableBody", fontName="Helvetica", fontSize=7, leading=9, textColor=colors.HexColor("#171717")),
+    "body": ParagraphStyle("PdfBody", fontName="Helvetica", fontSize=8, leading=11, textColor=colors.HexColor("#171717")),
+    "photo_caption": ParagraphStyle("PdfPhotoCaption", fontName="Helvetica", fontSize=6, leading=8, textColor=colors.HexColor("#656565")),
+}
+
+
 def get_equipment_filters():
     return {
         "q": request.args.get("q", "").strip()[:100],
@@ -1406,7 +1617,7 @@ def maintenance_by_month(rows):
     return [groups[key] for key in sorted(groups, reverse=True)]
 
 
-def validated_checklists(contract, start_date, end_date, equipment_number=""):
+def validated_checklists(contract, start_date, end_date, equipment_number="", limit=100):
     if not DATABASE_URL_2 or not start_date or not end_date:
         return [], None
     connection = None
@@ -1442,6 +1653,10 @@ def validated_checklists(contract, start_date, end_date, equipment_number=""):
               )
             """
             params.append(allowed_numbers)
+        limit_clause = ""
+        if limit:
+            limit_clause = "LIMIT %s"
+            params.append(int(limit))
         cursor.execute(
             f"""
             SELECT c.id, c.tipo_checklist, c.data_checklist, c.numero_contrato,
@@ -1465,7 +1680,7 @@ def validated_checklists(contract, start_date, end_date, equipment_number=""):
               )
               {scope_clause}
             ORDER BY c.data_checklist DESC NULLS LAST, c.id DESC
-            LIMIT 100
+            {limit_clause}
             """,
             params,
         )
@@ -1705,6 +1920,25 @@ def checklists():
         error=error,
         searched=bool(start_date and end_date),
     )
+
+
+@app.route("/checklists/pdf")
+@login_required
+def checklists_pdf():
+    start_date = request.args.get("data_inicio", "").strip()[:10]
+    end_date = request.args.get("data_fim", "").strip()[:10]
+    selected_equipment = request.args.get("equipamento", "").strip()[:100]
+    today = date.today()
+    if not start_date:
+        start_date = (today - timedelta(days=365)).isoformat()
+    if not end_date:
+        end_date = today.isoformat()
+    rows, error = validated_checklists(
+        "", start_date, end_date, selected_equipment, limit=None
+    )
+    if error:
+        abort(503)
+    return checklist_pdf_response(rows, start_date, end_date, selected_equipment)
 
 
 @app.route("/documentos")

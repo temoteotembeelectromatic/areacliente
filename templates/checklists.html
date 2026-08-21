@@ -7,10 +7,13 @@
       <h1>{% if selected_equipment %}Manutenções do equipamento #{{ selected_equipment }}{% else %}Histórico por contrato{% endif %}</h1>
       <p>Consulte registos validados, organizados por mês e tipologia.</p>
     </div>
-    <div class="maintenance-legend" aria-label="Legenda de tipologias">
-      <span class="maintenance-pill maintenance-pill-maintenance">Manutenção</span>
-      <span class="maintenance-pill maintenance-pill-inspection">Inspeção</span>
-      <span class="maintenance-pill maintenance-pill-corrective">Corretiva</span>
+    <div class="maintenance-overview-actions">
+      <div class="maintenance-legend" aria-label="Legenda de tipologias">
+        <span class="maintenance-pill maintenance-pill-maintenance">Manutenção</span>
+        <span class="maintenance-pill maintenance-pill-inspection">Inspeção</span>
+        <span class="maintenance-pill maintenance-pill-corrective">Corretiva</span>
+      </div>
+      <a class="pdf-download" href="{{ url_for('checklists_pdf', data_inicio=start_date, data_fim=end_date, equipamento=selected_equipment) }}">Descarregar PDF</a>
     </div>
   </header>
 

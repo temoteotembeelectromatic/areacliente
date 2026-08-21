@@ -2019,6 +2019,29 @@ textarea:focus {
   border-top-color: var(--electric);
 }
 
+.maintenance-overview-actions {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+}
+
+.pdf-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--brand);
+  color: #151515;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.pdf-download:hover {
+  background: var(--electric);
+}
+
 .maintenance-months {
   display: grid;
   gap: 18px;
@@ -2285,6 +2308,10 @@ textarea:focus {
   .maintenance-overview-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .maintenance-overview-actions {
+    justify-items: start;
   }
 
   .maintenance-legend {
