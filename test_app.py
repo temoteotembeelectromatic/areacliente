@@ -147,6 +147,13 @@ class LoginSecurityTests(unittest.TestCase):
         self.assertIn("Smartic Pro, Lda.", page)
         self.assertIn("privacidade@smartic.pro", page)
 
+    def test_maintenance_months_use_a_template_safe_records_key(self):
+        months = portal.maintenance_by_month(
+            [{"data_checklist": "2026-08-20", "tipo_checklist": "Manutenção preventiva"}]
+        )
+        self.assertEqual(len(months[0]["records"]), 1)
+        self.assertNotIn("items", months[0])
+
     def test_post_without_csrf_token_is_rejected(self):
         response = self.client.post("/login", data={"email": "cliente@smartic.pro"})
         self.assertEqual(response.status_code, 400)

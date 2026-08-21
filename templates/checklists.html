@@ -37,10 +37,10 @@
         <div class="maintenance-month">
           <div class="maintenance-month-heading">
             <h2>{{ month.label }}</h2>
-            <span>{{ month.items|length }} registo{% if month.items|length != 1 %}s{% endif %}</span>
+            <span>{{ month.records|length }} registo{% if month.records|length != 1 %}s{% endif %}</span>
           </div>
           <div class="maintenance-month-list">
-            {% for item in month.items %}
+            {% for item in month.records %}
               <article class="maintenance-overview-record maintenance-overview-{{ item.tone }}">
                 <div class="maintenance-record-type">{{ item.category }}</div>
                 <div class="maintenance-overview-main">

@@ -1318,7 +1318,7 @@ def maintenance_by_month(rows):
         item = dict(row)
         item["category"] = category
         item["tone"] = tone
-        groups.setdefault(month_key, {"label": month_label, "items": []})["items"].append(item)
+        groups.setdefault(month_key, {"label": month_label, "records": []})["records"].append(item)
     return [groups[key] for key in sorted(groups, reverse=True)]
 
 
