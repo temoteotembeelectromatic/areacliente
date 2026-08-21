@@ -495,8 +495,12 @@ def external_client_rows(numbers):
         return [{"number": number, "name": "Cliente associado"} for number in numbers]
     finally:
         if connection is not None:
-            connection.rollback()
-            connection.close()
+            try:
+                connection.rollback()
+            except psycopg2.Error:
+                pass
+            finally:
+                connection.close()
 
 
 def external_client_search(query):
@@ -1379,8 +1383,12 @@ def validated_checklists(contract, start_date, end_date, equipment_number=""):
         return [], "Não foi possível consultar as checklists neste momento."
     finally:
         if connection is not None:
-            connection.rollback()
-            connection.close()
+            try:
+                connection.rollback()
+            except psycopg2.Error:
+                pass
+            finally:
+                connection.close()
 
 
 @app.after_request
@@ -1590,11 +1598,11 @@ def checklists():
         start_date = (today - timedelta(days=365)).isoformat()
     if not end_date:
         end_date = today.isoformat()
-    rows, error = validated_checklists("", start_date, end_date, selected_equipment)
     try:
+        rows, error = validated_checklists("", start_date, end_date, selected_equipment)
         maintenance_months = maintenance_by_month(rows)
     except Exception:
-        app.logger.exception("Falha ao organizar o histórico de checklists")
+        app.logger.exception("Falha ao carregar o histórico de checklists")
         maintenance_months = []
         error = "Não foi possível apresentar as manutenções neste momento."
     return render_template(
