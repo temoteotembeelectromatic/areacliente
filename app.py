@@ -8,6 +8,7 @@ from io import BytesIO
 from functools import wraps
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+from uuid import uuid4
 from xml.sax.saxutils import escape
 
 import psycopg2
@@ -48,6 +49,7 @@ PRIVACY_UPDATED_AT = os.environ.get("PRIVACY_UPDATED_AT", "2026-08-17")
 CONTRACT_VALID_UNTIL = os.environ.get("CONTRACT_VALID_UNTIL", "2026-12-31")
 DATABASE_URL_2 = os.environ.get("DATABASE_URL_2", "").strip()
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+PDF_MAX_JOB_BYTES = int(os.environ.get("PDF_MAX_JOB_BYTES", str(50 * 1024 * 1024)))
 CLIENT_ALLOWED_NUMBERS = [
     value.strip()
     for value in os.environ.get("CLIENT_ALLOWED_NUMBERS", "").split(",")
@@ -889,7 +891,12 @@ def checklist_pdf_header(pdf_canvas, document):
     pdf_canvas.restoreState()
 
 
-def checklist_pdf_response(rows, start_date, end_date, equipment_number):
+def build_checklist_pdf(rows, start_date, end_date, equipment_number, allowed_numbers=None, progress_callback=None):
+    def report_progress(progress, stage):
+        if progress_callback is not None:
+            progress_callback(progress, stage)
+
+    report_progress(8, "A preparar o documento")
     output = BytesIO()
     document = SimpleDocTemplate(
         output,
@@ -925,12 +932,21 @@ def checklist_pdf_response(rows, start_date, end_date, equipment_number):
     ]))
     story.extend([summary, Spacer(1, 7 * mm)])
 
-    details = [maintenance_detail(row["id"]) for row in rows]
+    details = []
+    total_rows = len(rows)
+    for index, row in enumerate(rows, start=1):
+        detail = maintenance_detail(row["id"], allowed_numbers=allowed_numbers)
+        if detail:
+            details.append(detail)
+        if total_rows:
+            report_progress(10 + int(35 * index / total_rows), "A recolher relatórios e fotografias")
     details = [detail for detail in details if detail]
     if not details:
         story.append(Paragraph("Não existem relatórios validados para o período selecionado.", PDF_STYLES["body"]))
 
     for index, detail in enumerate(details):
+        if details:
+            report_progress(45 + int(45 * (index + 1) / len(details)), "A compor o PDF")
         if index:
             story.append(PageBreak())
         equipment_name = detail.get("tipo_equipamento") or "Equipamento"
@@ -1024,14 +1040,22 @@ def checklist_pdf_response(rows, start_date, end_date, equipment_number):
             ]))
             story.append(photos_table)
 
+    report_progress(94, "A finalizar o ficheiro")
     document.build(story, onFirstPage=checklist_pdf_header, onLaterPages=checklist_pdf_header)
     output.seek(0)
     suffix = f"-{equipment_number}" if equipment_number else ""
+    filename = f"manutencoes{suffix}-{start_date}-{end_date}.pdf"
+    report_progress(98, "A guardar o ficheiro")
+    return output, filename
+
+
+def checklist_pdf_response(rows, start_date, end_date, equipment_number):
+    output, filename = build_checklist_pdf(rows, start_date, end_date, equipment_number)
     return send_file(
         output,
         mimetype="application/pdf",
         as_attachment=True,
-        download_name=f"manutencoes{suffix}-{start_date}-{end_date}.pdf",
+        download_name=filename,
     )
 
 
@@ -1045,6 +1069,321 @@ PDF_STYLES = {
     "body": ParagraphStyle("PdfBody", fontName="Helvetica", fontSize=8, leading=11, textColor=colors.HexColor("#171717")),
     "photo_caption": ParagraphStyle("PdfPhotoCaption", fontName="Helvetica", fontSize=6, leading=8, textColor=colors.HexColor("#656565")),
 }
+
+
+PDF_JOB_LABELS = {
+    "queued": "Em fila",
+    "processing": "Em preparação",
+    "completed": "PDF pronto",
+    "failed": "Não foi possível gerar",
+}
+
+
+def ensure_pdf_jobs_table(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS portal_pdf_jobs (
+            id TEXT PRIMARY KEY,
+            requested_by TEXT NOT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            equipment_number TEXT NOT NULL DEFAULT '',
+            access_scope JSONB NOT NULL,
+            status TEXT NOT NULL DEFAULT 'queued',
+            progress SMALLINT NOT NULL DEFAULT 0,
+            stage TEXT NOT NULL DEFAULT 'Em fila',
+            file_name TEXT,
+            pdf_data BYTEA,
+            error_message TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            started_at TIMESTAMPTZ,
+            completed_at TIMESTAMPTZ
+        )
+        """
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS portal_pdf_jobs_pending_idx "
+        "ON portal_pdf_jobs (status, created_at)"
+    )
+
+
+def current_pdf_access_scope():
+    return {
+        "numbers": [str(number) for number in current_allowed_client_numbers()],
+        "contracts": [str(item["number"]) for item in relevant_contracts()],
+    }
+
+
+def enqueue_checklist_pdf_job(requested_by, start_date, end_date, equipment_number, access_scope):
+    if not DATABASE_URL:
+        return None
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        ensure_pdf_jobs_table(cursor)
+        job_id = uuid4().hex
+        cursor.execute(
+            """
+            INSERT INTO portal_pdf_jobs (
+                id, requested_by, start_date, end_date, equipment_number, access_scope
+            ) VALUES (%s, %s, %s::date, %s::date, %s, %s::jsonb)
+            """,
+            (job_id, requested_by, start_date, end_date, equipment_number, json.dumps(access_scope)),
+        )
+        connection.commit()
+        return job_id
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao criar a tarefa de PDF")
+        return None
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def pdf_jobs_for_user(requested_by, limit=5):
+    if not DATABASE_URL:
+        return []
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        ensure_pdf_jobs_table(cursor)
+        cursor.execute(
+            """
+            SELECT id, start_date, end_date, equipment_number, status, progress, stage,
+                   file_name, error_message, created_at
+            FROM portal_pdf_jobs
+            WHERE requested_by = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (requested_by, limit),
+        )
+        jobs = [dict(row) for row in cursor.fetchall()]
+        connection.commit()
+        for job in jobs:
+            job["status_label"] = PDF_JOB_LABELS.get(job["status"], "Em preparação")
+            job["progress"] = max(0, min(100, int(job["progress"] or 0)))
+        return jobs
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao consultar tarefas de PDF")
+        return []
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def pdf_job_for_user(job_id, requested_by, include_file=False):
+    if not DATABASE_URL or not job_id:
+        return None
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        ensure_pdf_jobs_table(cursor)
+        file_column = ", pdf_data" if include_file else ""
+        cursor.execute(
+            f"""
+            SELECT id, start_date, end_date, equipment_number, status, progress, stage,
+                   file_name, error_message, created_at {file_column}
+            FROM portal_pdf_jobs
+            WHERE id = %s AND requested_by = %s
+            """,
+            (job_id, requested_by),
+        )
+        job = cursor.fetchone()
+        connection.commit()
+        return dict(job) if job else None
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao consultar tarefa de PDF")
+        return None
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def update_pdf_job(job_id, progress, stage):
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            UPDATE portal_pdf_jobs
+            SET progress = GREATEST(progress, %s), stage = %s
+            WHERE id = %s AND status = 'processing'
+            """,
+            (max(0, min(99, int(progress))), stage, job_id),
+        )
+        connection.commit()
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao actualizar progresso do PDF")
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def claim_next_pdf_job():
+    if not DATABASE_URL:
+        return None
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        ensure_pdf_jobs_table(cursor)
+        cursor.execute(
+            """
+            UPDATE portal_pdf_jobs
+            SET status = 'queued', progress = 0, stage = 'Em fila', started_at = NULL
+            WHERE status = 'processing' AND started_at < NOW() - INTERVAL '45 minutes'
+            """
+        )
+        cursor.execute(
+            """
+            WITH next_job AS (
+                SELECT id
+                FROM portal_pdf_jobs
+                WHERE status = 'queued'
+                ORDER BY created_at
+                FOR UPDATE SKIP LOCKED
+                LIMIT 1
+            )
+            UPDATE portal_pdf_jobs job
+            SET status = 'processing', progress = 5, stage = 'A preparar relatórios', started_at = NOW()
+            FROM next_job
+            WHERE job.id = next_job.id
+            RETURNING job.*
+            """
+        )
+        job = cursor.fetchone()
+        connection.commit()
+        return dict(job) if job else None
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao obter tarefa de PDF")
+        return None
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def finish_pdf_job(job_id, output, file_name):
+    payload = output.getvalue()
+    if len(payload) > PDF_MAX_JOB_BYTES:
+        raise ValueError("O ficheiro excede o limite de armazenamento temporário.")
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            UPDATE portal_pdf_jobs
+            SET status = 'completed', progress = 100, stage = 'PDF pronto', file_name = %s,
+                pdf_data = %s, error_message = NULL, completed_at = NOW()
+            WHERE id = %s AND status = 'processing'
+            """,
+            (file_name, psycopg2.Binary(payload), job_id),
+        )
+        connection.commit()
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def fail_pdf_job(job_id):
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            UPDATE portal_pdf_jobs
+            SET status = 'failed', progress = 100, stage = 'Não foi possível gerar o PDF',
+                error_message = 'Tente novamente dentro de alguns minutos.', completed_at = NOW()
+            WHERE id = %s
+            """,
+            (job_id,),
+        )
+        connection.commit()
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao terminar tarefa de PDF")
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def cleanup_expired_pdf_jobs():
+    if not DATABASE_URL:
+        return
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        ensure_pdf_jobs_table(cursor)
+        cursor.execute(
+            """
+            DELETE FROM portal_pdf_jobs
+            WHERE status IN ('completed', 'failed')
+              AND completed_at < NOW() - INTERVAL '48 hours'
+            """
+        )
+        connection.commit()
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao limpar tarefas de PDF expiradas")
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def process_next_pdf_job():
+    job = claim_next_pdf_job()
+    if not job:
+        return False
+    try:
+        scope = job.get("access_scope") or {}
+        if isinstance(scope, str):
+            scope = json.loads(scope)
+        allowed_numbers = [str(value) for value in scope.get("numbers", [])]
+        allowed_contract_numbers = [str(value) for value in scope.get("contracts", [])]
+        update_pdf_job(job["id"], 10, "A consultar registos validados")
+        rows, error = validated_checklists(
+            "",
+            str(job["start_date"]),
+            str(job["end_date"]),
+            job.get("equipment_number") or "",
+            limit=None,
+            allowed_numbers=allowed_numbers,
+            allowed_contract_numbers=allowed_contract_numbers,
+        )
+        if error:
+            raise RuntimeError(error)
+        output, file_name = build_checklist_pdf(
+            rows,
+            str(job["start_date"]),
+            str(job["end_date"]),
+            job.get("equipment_number") or "",
+            allowed_numbers=allowed_numbers,
+            progress_callback=lambda progress, stage: update_pdf_job(job["id"], progress, stage),
+        )
+        finish_pdf_job(job["id"], output, file_name)
+    except Exception:
+        app.logger.exception("Falha ao gerar PDF em segundo plano")
+        fail_pdf_job(job["id"])
+    return True
 
 
 def get_equipment_filters():
@@ -1441,7 +1780,7 @@ def intervention_type_label(value):
     return text if text and "_" not in text else "Intervenção"
 
 
-def maintenance_detail(intervention_id):
+def maintenance_detail(intervention_id, allowed_numbers=None):
     if not DATABASE_URL_2:
         return next((item for item in maintenance if item["id"] == intervention_id), None)
     if not str(intervention_id).isdigit():
@@ -1458,7 +1797,8 @@ def maintenance_detail(intervention_id):
         cursor = connection.cursor(cursor_factory=RealDictCursor)
         scope_clause = ""
         params = [int(intervention_id)]
-        allowed_numbers = current_allowed_client_numbers()
+        if allowed_numbers is None:
+            allowed_numbers = current_allowed_client_numbers()
         if allowed_numbers:
             scope_clause = "AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)"
             params.append(allowed_numbers)
@@ -1617,7 +1957,15 @@ def maintenance_by_month(rows):
     return [groups[key] for key in sorted(groups, reverse=True)]
 
 
-def validated_checklists(contract, start_date, end_date, equipment_number="", limit=100):
+def validated_checklists(
+    contract,
+    start_date,
+    end_date,
+    equipment_number="",
+    limit=100,
+    allowed_numbers=None,
+    allowed_contract_numbers=None,
+):
     if not DATABASE_URL_2 or not start_date or not end_date:
         return [], None
     connection = None
@@ -1631,7 +1979,8 @@ def validated_checklists(contract, start_date, end_date, equipment_number="", li
         cursor = connection.cursor(cursor_factory=RealDictCursor)
         params = [start_date, end_date]
         contract_clause = ""
-        allowed_contract_numbers = [item["number"] for item in relevant_contracts()]
+        if allowed_contract_numbers is None:
+            allowed_contract_numbers = [item["number"] for item in relevant_contracts()]
         if allowed_contract_numbers:
             contract_clause = "AND TRIM(COALESCE(c.numero_contrato, '')) = ANY(%s)"
             params.append(allowed_contract_numbers)
@@ -1643,7 +1992,8 @@ def validated_checklists(contract, start_date, end_date, equipment_number="", li
             equipment_clause = "AND TRIM(COALESCE(c.numero_equipamento, '')) = %s"
             params.append(equipment_number)
         scope_clause = ""
-        allowed_numbers = current_allowed_client_numbers()
+        if allowed_numbers is None:
+            allowed_numbers = current_allowed_client_numbers()
         if allowed_numbers:
             scope_clause = """
               AND EXISTS (
@@ -1911,6 +2261,7 @@ def checklists():
         app.logger.exception("Falha ao carregar o histórico de checklists")
         maintenance_months = []
         error = "Não foi possível apresentar as manutenções neste momento."
+    pdf_jobs = pdf_jobs_for_user(current_user()["email"])
     return render_template(
         "checklists.html",
         maintenance_months=maintenance_months,
@@ -1919,12 +2270,17 @@ def checklists():
         selected_equipment=selected_equipment,
         error=error,
         searched=bool(start_date and end_date),
+        pdf_jobs=pdf_jobs,
+        pdf_jobs_pending=any(job["status"] in {"queued", "processing"} for job in pdf_jobs),
     )
 
 
-@app.route("/checklists/pdf")
+@app.route("/checklists/pdf", methods=["GET"])
 @login_required
 def checklists_pdf():
+    # Mantém a exportação directa para demonstração local, onde não existe fila.
+    if DATABASE_URL:
+        abort(405)
     start_date = request.args.get("data_inicio", "").strip()[:10]
     end_date = request.args.get("data_fim", "").strip()[:10]
     selected_equipment = request.args.get("equipamento", "").strip()[:100]
@@ -1939,6 +2295,73 @@ def checklists_pdf():
     if error:
         abort(503)
     return checklist_pdf_response(rows, start_date, end_date, selected_equipment)
+
+
+@app.route("/checklists/pdf", methods=["POST"])
+@login_required
+def enqueue_checklists_pdf():
+    verify_csrf()
+    start_date = request.form.get("data_inicio", "").strip()[:10]
+    end_date = request.form.get("data_fim", "").strip()[:10]
+    selected_equipment = request.form.get("equipamento", "").strip()[:100]
+    today = date.today()
+    if not start_date:
+        start_date = (today - timedelta(days=365)).isoformat()
+    if not end_date:
+        end_date = today.isoformat()
+    if start_date > end_date:
+        flash("A data inicial tem de ser anterior à data final.", "error")
+    else:
+        job_id = enqueue_checklist_pdf_job(
+            current_user()["email"],
+            start_date,
+            end_date,
+            selected_equipment,
+            current_pdf_access_scope(),
+        )
+        if job_id:
+            flash("A exportação foi colocada em preparação.", "success")
+        else:
+            flash("Não foi possível preparar a exportação PDF.", "error")
+    return redirect(url_for(
+        "checklists",
+        data_inicio=start_date,
+        data_fim=end_date,
+        equipamento=selected_equipment,
+    ))
+
+
+@app.route("/api/checklists/pdf/<job_id>")
+@login_required
+def checklist_pdf_status(job_id):
+    job = pdf_job_for_user(job_id, current_user()["email"])
+    if not job:
+        abort(404)
+    status = job["status"]
+    return jsonify({
+        "status": status,
+        "status_label": PDF_JOB_LABELS.get(status, "Em preparação"),
+        "progress": max(0, min(100, int(job["progress"] or 0))),
+        "stage": job["stage"],
+        "download_url": url_for("download_checklists_pdf", job_id=job_id) if status == "completed" else None,
+    })
+
+
+@app.route("/checklists/pdf/<job_id>")
+@login_required
+def download_checklists_pdf(job_id):
+    job = pdf_job_for_user(job_id, current_user()["email"], include_file=True)
+    if not job:
+        abort(404)
+    if job["status"] != "completed" or not job.get("pdf_data"):
+        abort(409)
+    payload = bytes(job["pdf_data"])
+    return send_file(
+        BytesIO(payload),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=job.get("file_name") or "manutencoes.pdf",
+    )
 
 
 @app.route("/documentos")

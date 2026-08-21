@@ -13,7 +13,13 @@
         <span class="maintenance-pill maintenance-pill-inspection">Inspeção</span>
         <span class="maintenance-pill maintenance-pill-corrective">Corretiva</span>
       </div>
-      <a class="pdf-download" href="{{ url_for('checklists_pdf', data_inicio=start_date, data_fim=end_date, equipamento=selected_equipment) }}">Descarregar PDF</a>
+      <form method="post" action="{{ url_for('enqueue_checklists_pdf') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="data_inicio" value="{{ start_date }}">
+        <input type="hidden" name="data_fim" value="{{ end_date }}">
+        <input type="hidden" name="equipamento" value="{{ selected_equipment }}">
+        <button class="pdf-download" type="submit">Preparar PDF</button>
+      </form>
     </div>
   </header>
 
@@ -27,6 +33,38 @@
     </label>
     <button class="filter-submit" type="submit">Procurar</button>
   </form>
+
+  {% if pdf_jobs %}
+    <section class="pdf-jobs panel" {% if pdf_jobs_pending %}data-pdf-job-poll{% endif %}>
+      <div class="pdf-jobs-heading">
+        <div>
+          <span class="eyebrow">Exportações</span>
+          <h2>Relatórios em PDF</h2>
+        </div>
+      </div>
+      <div class="pdf-job-list">
+        {% for job in pdf_jobs %}
+          <article class="pdf-job" data-pdf-job data-status-url="{{ url_for('checklist_pdf_status', job_id=job.id) }}">
+            <div class="pdf-job-copy">
+              <strong>Relatórios de {{ job.start_date }} a {{ job.end_date }}{% if job.equipment_number %} · Equipamento #{{ job.equipment_number }}{% endif %}</strong>
+              <span data-pdf-job-stage>{{ job.stage }}</span>
+            </div>
+            <div class="pdf-job-action">
+              <span class="pdf-job-status" data-pdf-job-status>{{ job.status_label }}</span>
+              {% if job.status == 'completed' %}
+                <a class="contract-detail-link" data-pdf-job-download href="{{ url_for('download_checklists_pdf', job_id=job.id) }}">Descarregar</a>
+              {% else %}
+                <a class="contract-detail-link" data-pdf-job-download hidden href="#">Descarregar</a>
+              {% endif %}
+            </div>
+            <div class="pdf-job-progress" role="progressbar" aria-label="Progresso da exportação PDF" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ job.progress }}">
+              <span data-pdf-job-progress style="width: {{ job.progress }}%"></span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 
   {% if error %}
     <section class="empty-state error-state"><h2>Consulta indisponível</h2><p>{{ error }}</p></section>

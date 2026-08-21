@@ -2042,6 +2042,80 @@ textarea:focus {
   background: var(--electric);
 }
 
+.maintenance-overview-actions form {
+  margin: 0;
+}
+
+.pdf-jobs {
+  margin-bottom: 18px;
+  border-top: 3px solid var(--electric);
+}
+
+.pdf-jobs-heading {
+  padding: 16px 20px 10px;
+}
+
+.pdf-jobs-heading h2 {
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+}
+
+.pdf-job-list {
+  display: grid;
+}
+
+.pdf-job {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 18px;
+  padding: 14px 20px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pdf-job-copy,
+.pdf-job-action {
+  display: grid;
+  gap: 4px;
+}
+
+.pdf-job-copy strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.pdf-job-copy span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.pdf-job-action {
+  justify-items: end;
+  align-content: start;
+}
+
+.pdf-job-status {
+  color: var(--brand-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pdf-job-progress {
+  grid-column: 1 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ebe7e1;
+}
+
+.pdf-job-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--electric);
+  transition: width 350ms ease;
+}
+
 .maintenance-months {
   display: grid;
   gap: 18px;
@@ -2311,6 +2385,14 @@ textarea:focus {
   }
 
   .maintenance-overview-actions {
+    justify-items: start;
+  }
+
+  .pdf-job {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-job-action {
     justify-items: start;
   }
 

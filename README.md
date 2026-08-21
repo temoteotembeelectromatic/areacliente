@@ -7,7 +7,7 @@ Portal inicial em Flask para uma área reservada de cliente.
 - Acesso em duas fases, disponível apenas enquanto o contrato estiver ativo.
 - Lista de equipamentos abrangidos pelo contrato.
 - Histórico de manutenção corretiva e preventiva com checklists e relatórios.
-- Download de PDFs individuais ou num único ficheiro conjunto.
+- Exportação de relatórios PDF por tarefa em segundo plano, com progresso visível.
 - Contacto com gestor de contrato e assistente de orientação inicial.
 - Gestão de utilizadores com associação explícita a números de cliente.
 
@@ -66,6 +66,14 @@ python -c "from werkzeug.security import generate_password_hash; print(generate_
 ```
 
 Cole o resultado em `CLIENT_PASSWORD_HASH`. Nunca use `CLIENT_PASSWORD` nem publique uma palavra-passe no repositório.
+
+### Worker para PDFs
+
+As exportações de relatórios são colocadas numa fila na `DATABASE_URL` e processadas pelo serviço Render `area-cliente-pdf-worker`. A página mostra o progresso enquanto o ficheiro é preparado e disponibiliza a descarga quando termina. Os PDFs ficam guardados temporariamente durante 48 horas e são depois eliminados pelo worker.
+
+No worker, configure as mesmas variáveis `SECRET_KEY`, `CLIENT_EMAIL`, `CLIENT_PASSWORD_HASH`, `CLIENT_USER_ACCOUNTS_JSON`, `DATABASE_URL`, `DATABASE_URL_2` e `EQUIPMENT_TEST_MODE` usadas no serviço web. `DATABASE_URL` é a única base onde a fila e os ficheiros temporários são gravados; `DATABASE_URL_2` continua a ser usada apenas em transações de leitura para consultar os relatórios.
+
+Pode ajustar o limite temporário de cada ficheiro com `PDF_MAX_JOB_BYTES` (por omissão, 50 MB). Para serviços Render já existentes, crie o worker no painel ou sincronize o Blueprint para aplicar a definição do `render.yaml`.
 
 Para associar vários utilizadores aos respectivos clientes, configure `CLIENT_USER_ACCOUNTS_JSON` no Render. Cada conta deve conter um hash seguro e pelo menos um número de cliente:
 

@@ -10,6 +10,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  const pdfJobPanel = document.querySelector("[data-pdf-job-poll]");
+  if (pdfJobPanel) {
+    const updatePdfJob = async (job) => {
+      const response = await fetch(job.dataset.statusUrl, { headers: { Accept: "application/json" } });
+      if (!response.ok) return false;
+      const state = await response.json();
+      const progress = Math.max(0, Math.min(100, Number(state.progress) || 0));
+      const bar = job.querySelector("[data-pdf-job-progress]");
+      const stage = job.querySelector("[data-pdf-job-stage]");
+      const status = job.querySelector("[data-pdf-job-status]");
+      const download = job.querySelector("[data-pdf-job-download]");
+      if (bar) bar.style.width = `${progress}%`;
+      job.querySelector("[role='progressbar']")?.setAttribute("aria-valuenow", String(progress));
+      if (stage) stage.textContent = state.stage;
+      if (status) status.textContent = state.status_label;
+      if (state.download_url && download) {
+        download.href = state.download_url;
+        download.hidden = false;
+      }
+      return state.status === "queued" || state.status === "processing";
+    };
+
+    const pollPdfJobs = async () => {
+      const results = await Promise.all(
+        Array.from(pdfJobPanel.querySelectorAll("[data-pdf-job]")).map((job) => updatePdfJob(job).catch(() => false))
+      );
+      if (results.some(Boolean)) window.setTimeout(pollPdfJobs, 2500);
+    };
+    window.setTimeout(pollPdfJobs, 700);
+  }
+
   const clientSearch = document.querySelector("#client-search");
   const clientSuggestions = document.querySelector("#client-suggestions");
   const selectedClients = document.querySelector("#selected-client-numbers");

@@ -29,3 +29,27 @@ services:
         sync: false
       - key: EQUIPMENT_TEST_MODE
         value: true
+      - key: PDF_MAX_JOB_BYTES
+        value: 52428800
+  - type: worker
+    name: area-cliente-pdf-worker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python worker.py
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: CLIENT_EMAIL
+        value: cliente.teste@exemplo.pt
+      - key: CLIENT_PASSWORD_HASH
+        sync: false
+      - key: CLIENT_USER_ACCOUNTS_JSON
+        sync: false
+      - key: DATABASE_URL_2
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: EQUIPMENT_TEST_MODE
+        value: true
+      - key: PDF_MAX_JOB_BYTES
+        value: 52428800
