@@ -696,25 +696,25 @@ def recent_intervention_reports(contracts, limit=3):
             """
         ]
         params = []
-        if allowed_contract_numbers:
-            clauses.append("TRIM(COALESCE(s.numero_servico, '')) = ANY(%s)")
-            params.append(allowed_contract_numbers)
-        if allowed_numbers:
+        if allowed_numbers or allowed_contract_numbers:
+            equipment_scope = [
+                """
+                TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_1_id, ''))
+                OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_2_id, ''))
+                OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_3_id, ''))
+                """
+            ]
+            if allowed_numbers:
+                equipment_scope.append("TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)")
+                params.append(allowed_numbers)
+            if allowed_contract_numbers:
+                equipment_scope.append("TRIM(COALESCE(e.numero_contrato, '')) = ANY(%s)")
+                params.append(allowed_contract_numbers)
             clauses.append(
-                """
-                EXISTS (
-                    SELECT 1
-                    FROM registo_equipamentos e
-                    WHERE (
-                        TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_1_id, ''))
-                        OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_2_id, ''))
-                        OR TRIM(COALESCE(e.numero_equipamento, '')) = TRIM(COALESCE(s.equipamento_3_id, ''))
-                    )
-                    AND TRIM(COALESCE(e.numero_cliente, '')) = ANY(%s)
-                )
-                """
+                "EXISTS (SELECT 1 FROM registo_equipamentos e WHERE "
+                + " AND ".join(f"({condition.strip()})" for condition in equipment_scope)
+                + ")"
             )
-            params.append(allowed_numbers)
         params.append(limit)
         cursor.execute(
             f"""

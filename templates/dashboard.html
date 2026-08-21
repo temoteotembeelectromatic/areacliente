@@ -56,7 +56,7 @@
 
     <article class="panel">
       <div class="panel-header">
-        <h2>Últimas RIs</h2>
+        <h2>Últimos relatórios de intervenção</h2>
         <a href="{{ url_for('manutencao') }}">Ver histórico</a>
       </div>
       {% for item in maintenance %}
@@ -68,7 +68,7 @@
           <a class="contract-detail-link" href="{{ url_for('manutencao_detalhe', intervention_id=item.id) }}">Ver detalhe</a>
         </div>
       {% else %}
-        <p class="panel-copy">Não existem RIs concluídas para os contratos associados.</p>
+        <p class="panel-copy">Não existem relatórios de intervenção para os contratos associados.</p>
       {% endfor %}
     </article>
   </section>
