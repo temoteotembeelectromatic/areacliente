@@ -32,7 +32,7 @@
             <a href="{{ url_for('documentos') }}">Documentos</a>
             <a href="{{ url_for('apoio') }}">Apoio</a>
             <a href="{{ url_for('perfil') }}">Perfil</a>
-            <a href="{{ url_for('utilizadores') }}">Utilizadores</a>
+            {% if current_user_role == 'Administrador' %}<a href="{{ url_for('utilizadores') }}">Utilizadores</a>{% endif %}
           </nav>
           <form method="post" action="{{ url_for('logout') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

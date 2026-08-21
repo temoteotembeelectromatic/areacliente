@@ -169,6 +169,23 @@ class LoginSecurityTests(unittest.TestCase):
         response = self.client.post("/login", data={"email": "cliente@smartic.pro"})
         self.assertEqual(response.status_code, 400)
 
+    def test_users_page_requires_administrator_role(self):
+        original_accounts = list(portal.client_accounts)
+        portal.client_accounts.append({
+            "email": "utilizador@smartic.pro",
+            "password_hash": generate_password_hash("senha-de-teste"),
+            "name": "Utilizador de teste",
+            "role": "Utilizador",
+            "client_numbers": ["TESTE-001"],
+        })
+        try:
+            with self.client.session_transaction() as browser_session:
+                browser_session["logged_in"] = True
+                browser_session["user_index"] = 1
+            self.assertEqual(self.client.get("/utilizadores").status_code, 403)
+        finally:
+            portal.client_accounts[:] = original_accounts
+
     def test_expired_contract_blocks_the_dashboard(self):
         original_expiry = portal.contract_valid_until
         portal.contract_valid_until = portal.date(2020, 1, 1)

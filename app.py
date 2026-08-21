@@ -780,7 +780,10 @@ def csrf_token():
 
 @app.context_processor
 def inject_template_helpers():
-    return {"csrf_token": csrf_token}
+    role = ""
+    if session.get("logged_in"):
+        role = current_user().get("role", "")
+    return {"csrf_token": csrf_token, "current_user_role": role}
 
 
 def verify_csrf():
@@ -2562,10 +2565,10 @@ def perfil():
 @app.route("/utilizadores", methods=["GET", "POST"])
 @login_required
 def utilizadores():
+    if current_user().get("role") != "Administrador":
+        abort(403)
     if request.method == "POST":
         verify_csrf()
-        if current_user().get("role") != "Administrador":
-            abort(403)
         email = request.form.get("email", "").strip().lower()
         name = request.form.get("name", "").strip()
         password = request.form.get("password", "")
@@ -2597,8 +2600,6 @@ def utilizadores():
         return redirect(url_for("utilizadores"))
 
     users = portal_users_for_page()
-    if current_user().get("role") != "Administrador":
-        users = [users[session.get("user_index", 0)]]
     associated_numbers = sorted(
         {
             number
@@ -2611,7 +2612,7 @@ def utilizadores():
         users=users,
         active_count=sum(user["status"] == "Activo" for user in users),
         clients=external_client_rows(associated_numbers),
-        can_manage=current_user().get("role") == "Administrador" and bool(DATABASE_URL),
+        can_manage=bool(DATABASE_URL),
         current_user_role=current_user().get("role"),
         profile=client_profile,
     )
