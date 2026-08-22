@@ -11,7 +11,7 @@
   </head>
   <body>
     <div class="app-shell">
-      {% if session.get("logged_in") %}
+      {% if session.get("logged_in") and not session.get("must_change_password") %}
         <aside class="sidebar">
           <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Electromatic - Área do cliente">
             <span class="brand-logo-surface">

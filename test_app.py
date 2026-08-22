@@ -186,6 +186,35 @@ class LoginSecurityTests(unittest.TestCase):
         finally:
             portal.client_accounts[:] = original_accounts
 
+    def test_initial_password_requires_a_change_before_portal_access(self):
+        original_accounts = list(portal.client_accounts)
+        portal.client_accounts.append({
+            "email": "inicial@smartic.pro",
+            "password_hash": generate_password_hash("senha-inicial"),
+            "name": "Conta inicial",
+            "role": "Utilizador",
+            "client_numbers": ["TESTE-001"],
+            "must_change_password": True,
+        })
+        try:
+            email_page = self.client.get("/login")
+            self.client.post(
+                "/login",
+                data={"email": "inicial@smartic.pro", "csrf_token": token_from(email_page)},
+            )
+            password_page = self.client.get("/login/password")
+            response = self.client.post(
+                "/login/password",
+                data={"password": "senha-inicial", "csrf_token": token_from(password_page)},
+            )
+            self.assertIn("/redefinir-palavra-passe", response.headers["Location"])
+            self.assertEqual(self.client.get("/dashboard").status_code, 302)
+            reset_page = self.client.get("/redefinir-palavra-passe")
+            self.assertEqual(reset_page.status_code, 200)
+            self.assertIn("Defina a sua palavra-passe", reset_page.get_data(as_text=True))
+        finally:
+            portal.client_accounts[:] = original_accounts
+
     def test_expired_contract_blocks_the_dashboard(self):
         original_expiry = portal.contract_valid_until
         portal.contract_valid_until = portal.date(2020, 1, 1)

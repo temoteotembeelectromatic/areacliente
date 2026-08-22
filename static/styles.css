@@ -385,6 +385,38 @@ select:focus {
   transform: translateY(-4px);
 }
 
+.password-reset-page {
+  display: grid;
+  min-height: calc(100vh - 96px);
+  place-items: center;
+}
+
+.password-reset-panel {
+  width: min(100%, 480px);
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-top: 3px solid #202020;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.password-reset-panel h1 {
+  margin: 6px 0 10px;
+  font-size: 1.8rem;
+}
+
+.password-reset-panel p {
+  margin: 0 0 22px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.password-reset-form {
+  display: grid;
+  gap: 16px;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;

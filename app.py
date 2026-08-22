@@ -217,9 +217,13 @@ def load_user_accounts():
                 name TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'Utilizador',
                 status TEXT NOT NULL DEFAULT 'Activo',
+                must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
+        )
+        cursor.execute(
+            "ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE"
         )
         cursor.execute(
             """
@@ -259,7 +263,7 @@ def load_user_accounts():
                 )
         cursor.execute(
             """
-            SELECT u.id, u.email, u.password_hash, u.name, u.role, u.status,
+            SELECT u.id, u.email, u.password_hash, u.name, u.role, u.status, u.must_change_password,
                    COALESCE(ARRAY_AGG(c.numero_cliente) FILTER (WHERE c.numero_cliente IS NOT NULL), '{}') AS client_numbers
             FROM portal_users u
             LEFT JOIN portal_user_clients c ON c.user_id = u.id
@@ -340,8 +344,8 @@ def create_portal_user(email, password, name, role, client_numbers, contracts):
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO portal_users (email, password_hash, name, role)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO portal_users (email, password_hash, name, role, must_change_password)
+            VALUES (%s, %s, %s, %s, TRUE)
             RETURNING id
             """,
             (email, generate_password_hash(password), name, role),
@@ -758,6 +762,34 @@ def recent_intervention_reports(contracts, limit=3):
                 connection.close()
 
 
+def update_portal_password(user_id, password):
+    if not DATABASE_URL:
+        return False
+    connection = None
+    try:
+        connection = psycopg2.connect(DATABASE_URL, connect_timeout=5)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            UPDATE portal_users
+            SET password_hash = %s, must_change_password = FALSE
+            WHERE id = %s AND status = 'Activo'
+            """,
+            (generate_password_hash(password), user_id),
+        )
+        updated = cursor.rowcount == 1
+        connection.commit()
+        return updated
+    except Exception:
+        if connection is not None:
+            connection.rollback()
+        app.logger.exception("Falha ao redefinir a palavra-passe")
+        return False
+    finally:
+        if connection is not None:
+            connection.close()
+
+
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -767,6 +799,8 @@ def login_required(view):
             session.clear()
             flash("O acesso está suspenso porque o contrato indicado terminou.", "error")
             return redirect(url_for("login"))
+        if session.get("must_change_password") and request.endpoint not in {"redefinir_palavra_passe", "logout"}:
+            return redirect(url_for("redefinir_palavra_passe"))
         return view(*args, **kwargs)
 
     return wrapped_view
@@ -2196,8 +2230,11 @@ def login_password():
             session.clear()
             session["logged_in"] = True
             session["user_id"] = accounts[user_index].get("id", user_index)
+            session["must_change_password"] = bool(accounts[user_index].get("must_change_password"))
             session.permanent = True
             clear_login_attempts(key)
+            if session["must_change_password"]:
+                return redirect(url_for("redefinir_palavra_passe"))
             return redirect(url_for("dashboard"))
 
         register_failed_login(key)
@@ -2205,6 +2242,31 @@ def login_password():
         return redirect(url_for("login_password"))
 
     return render_template("login.html", password_step=True)
+
+
+@app.route("/redefinir-palavra-passe", methods=["GET", "POST"])
+@login_required
+def redefinir_palavra_passe():
+    if not session.get("must_change_password"):
+        return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        verify_csrf()
+        password = request.form.get("password", "")
+        password_confirmation = request.form.get("password_confirmation", "")
+        user = current_user()
+        if len(password) < 12:
+            flash("A nova palavra-passe deve ter pelo menos 12 caracteres.", "error")
+        elif password != password_confirmation:
+            flash("As palavras-passe não coincidem.", "error")
+        elif check_password_hash(user["password_hash"], password):
+            flash("Escolha uma palavra-passe diferente da palavra-passe inicial.", "error")
+        elif update_portal_password(user.get("id"), password):
+            session["must_change_password"] = False
+            flash("A palavra-passe foi actualizada.", "success")
+            return redirect(url_for("dashboard"))
+        else:
+            flash("Não foi possível actualizar a palavra-passe. Tente novamente.", "error")
+    return render_template("reset_password.html")
 
 
 @app.route("/logout", methods=["POST"])
